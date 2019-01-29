@@ -1,0 +1,215 @@
+import { Doc } from '@frontarm/doc'
+export const demoboardHelpers = {
+  'README.md': require('!raw-loader!./default/README.md'),
+  'Cards.js': require('!raw-loader!./default/Cards.js'),
+  'index.js': require('!raw-loader!./default/index.js'),
+  'styles.css': require('!raw-loader!./default/styles.css'),
+  'style.scss': require('!raw-loader!./demos/nathan1-styles.scss'),
+  'index.html': require('!raw-loader!./demos/nathan1-index.html'),
+}
+
+*Just want to try it? [Go to Demoboard &raquo](/demoboard/)*
+
+Once upon a time, when I was a young lad, the web was *simpler*. Code was ~~borrowed~~ shared with "View Source". Package management wasn't a thing because git hadn't been invented yet. And writing JavaScript meant adding a `<script>` tag to your HTML and... starting writing.
+
+<Doc.Float minWidth='50%'>
+<Doc.Image src={require('./ives-quote.png')} alt="Woooooooow I love this!" />
+</Doc.Float>
+
+Would I go back to this world? Hell no. Modern JavaScript is unbelievably awesome. But one thing I look back on with rose-tinted glasses is how easy it was to get started. You just copied and pasted some code into a file, and it worked -- there was nothing to transpile, no `package.json` to manage, and `node_modules` wouldn't have fit on a 512mb hard drive anyway.
+
+The thing is, back then you could learn JavaScript *without* learning the entire ecosystem. If you copied and pasted some code, it would *just work*. A little like this:
+
+```js
+//--- index.js
+import React from 'react'
+import ReactDOM from 'react-dom'
+import Button from '@material-ui/core/Button'
+
+ReactDOM.render(
+  <Button variant='outlined' color='primary'>
+    🔥 I'm a material button! 🔥
+  </Button>,
+  document.getElementById('root')
+)
+```
+
+
+## Holy JavaScript Batman?!
+
+See that editor above? It uses JavaScript `import` to pull in React and [Material UI](https://material-ui.com/). There's no `package.json` -- imports *just work*. And there's nothing special about the React or Material UI packages to make this so. You can use *any* package. For example, if you don't like React, you can use Vue instead:
+
+```js
+//--- index.html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Vue.js Starter</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div class="center">
+        <h1 style="color: #4fc08d;">{{ message }}</h1>
+      </div>
+    </div>
+    <script type="module" src="index.js"></script>
+  </body>
+</html>
+//--- index.js
+import Vue from 'vue'
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    message: 'Hello Vue!'
+  }
+})
+//--- styles.css
+html {
+  height: 100%;
+}
+body {
+  font-family: Lato, Helvetica, Arial, sans-serif;
+  margin: 0;
+  font-size: 15px;
+  color: #342656;
+  height: 100%;
+}
+
+#app {
+  height: 100%;
+}
+
+.center {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+```
+
+By the way, say you've made some changes to one of these editors, and you want to save or share them? Hit the fork button, and you'll have your very own **Demoboard**. Just copy and paste the new page's URL to share it -- and [login with GitHub](/members/register/?redirectTo=%2Farticles%2Fannouncing-demoboard%2F%23but-how-does-all-this-magic-work) to make sure you can save new changes down the track.
+
+
+## But how does all this magic work?
+
+<Doc.AsideTop>
+
+Simple. The editor transpiles your code with Babel, uses a [babel plugin](https://github.com/avajs/babel-plugin-detective) to find any resulting `require()` statements, and then uses this info to build a special browser-loadable module for each file.
+
+<Doc.Details aside>
+
+Demoboard wouldn't be possible without the help of the open source community. In particular, I want to give a special thanks to [Ives van Hoorne](https://twitter.com/CompuIves) for publishing [CodeSandbox](https://github.com/CompuIves/codesandbox-client/)'s source.
+
+</Doc.Details>
+</Doc.AsideTop>
+
+But what about bare imports like `react`, `vue` or `@material-ui/core/Button`? Demoboard downloads each file from [UNPKG](https://unpkg.com/#/) on the fly, then applies the same CommonJS special-sauce transform on UNPKG modules. Thanks to UNPKG's ability to put version ranges in URLs, you can even request specific *versions* of NPM packages, like this React Hooks example that imports `react@next`:
+
+```js
+//--- index.js
+import React from 'react@next'
+import ReactDOM from 'react-dom@next'
+
+function App() {
+  let [count, setCount] = React.useState(1)
+
+  return (
+    <div className='center'>
+      <button onClick={() => setCount(count + 1)}>
+        <h1>{"Hello, ".repeat(count)}React Hooks!</h1>
+      </button>
+    </div>
+  )
+}
+
+ReactDOM.render(
+  <App />,
+  document.getElementById('root')
+)
+//--- styles.css
+html {
+  height: 100%;
+}
+body {
+  font-family: Lato, Helvetica, Arial, sans-serif;
+  margin: 0;
+  font-size: 15px;
+  color: #342656;
+  height: 100%;
+}
+
+#root {
+  height: 100%;
+}
+
+.center {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+```
+
+## An editor for learning.
+
+*Ok, this is cool and all. But what's the point? Isn't Frontend Armory supposed to teach me JavaScript?*
+
+The thing about learning is that it takes effort. It takes *practice*. And that's why Demoboard is designed to get out of your way and make coding *fun* -- the more JavaScript you write, the more you learn.
+
+Of course, an editor will only get you so far. *Students need guidance.* Frontend Armory has some great Demoboard based [courses and guides](/learn/), but there's always more ground to cover. And that's where *you* come in.
+
+**Demoboard is designed to let you create demos and lessons for your favorite topic, using MDX.**<br /><br />
+
+<Doc.Float minWidth='50%'>
+<Doc.Image src={require('./otander-quote.png')} alt="This is unreal!" />
+</Doc.Float>
+
+## `README.md`
+
+You know how GitHub displays the `README.md` file when you load a project? So does Demoboard. Here's the README for Demoboard itself:
+
+```
+//---
+viewerURL: /README.md
+//--- README.md <-- README.md
+//--- Cards.js <-- Cards.js
+//--- index.js <-- index.js
+//--- styles.css <-- styles.css
+```
+
+Under the hood, Demoboard uses [MDX](https://mdxjs.com) to turn markdown into JSX. This means that you can write in Markdown like you're used to, but you can *still* import any React component on NPM. There's also a button at the top-right to toggle between `/README.md` and `/`, letting you jump quickly between a demo and it's docs.
+
+
+## What will *you* demo?
+
+My favorite thing about Demoboard is the "fork" button. With a single button press, you have a new URL all to yourself. Just start typing, then show the world... and show me too, because I can't wait to see what you make.
+
+To give you some idea of the possibilities, I'll be sharing some demos that the community have put together here.
+
+First up is a HTML/SASS only Demoboard by [Nathan Taylor](https://nathan.tokyo) — who is also behind the design of Frontend Armory itself.
+
+```
+//---
+lineCount: 30
+//--- style.scss <-- style.scss
+//--- index.html <-- index.html
+```
+
+*Have you built a neat [Demoboard](/demoboard/) that you'd like to put here? Let me know at [james@frontarm.com](mailto:james@frontarm.com)!*
+
+## How you can help
+
+My mission with Frontend Armory is to create the most effective way to learn frontend engineering on the internet. That's a big goal, and I can't do it alone. Here's how you can help:
+
+- If you've created a demo, then show it off with the [#demoboard](https://twitter.com/search?q=%23demoboard&src=typd) hash tag! I'll be blogging about what people create.
+- Share this post using the buttons on the left.
+- If there's anything you love or hate, let me know at [james@frontarm.com](mailto:james@frontarm.com) -- your honest feedback is invaluable.
+- Are you learning JavaScript/React, or managing a team that is? Then join [Frontend Armory Pro](/pricing/individual/), or [get in touch](mailto:hello@frontarm.com) to discuss how I can help. Incidentally, it's membership is currently **half price** for Black Friday!
+- If you just want to support the project but don't need the courses, then [join](/pricing/individual/) Frontend Armory Pro anyway!
+- And if you haven't already, [create a free account](/members/register/) to stay in the loop with new demos, tools and courses.
+
+Finally, I want to thank *you* for reading. Putting Demoboard together has been an adventure, and I'm super grateful that you're showing an interest. I'll be back in touch soon with some examples of what people have created -- stay tuned!

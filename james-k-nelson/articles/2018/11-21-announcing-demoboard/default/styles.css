@@ -1,0 +1,92 @@
+body {
+  color: #0f0035;
+  padding-bottom: 2rem;
+}
+
+h1.frontend-armory {
+  color: #342656;
+  background-color: #f0f4fc;
+  margin: 0 0 2rem;
+  padding: 2rem 1.5rem 2rem 5.25rem;
+  text-transform: uppercase;
+  font-size: 1rem;
+  font-weight: 400;
+  position: relative;
+}
+h1.frontend-armory .demoboard {
+  font-size: 2rem;
+  display: block;
+  font-weight: bold;
+}
+h1.frontend-armory img {
+  position: absolute;
+  left: 0;
+  top: 2.3rem;
+  width: 48px;
+  height: 48px
+}
+
+h2 {
+  margin-top: 2.5rem;
+  font-size: 1.5rem;
+  color: #342656;
+}
+
+
+blockquote {
+  font-family: Georgia;
+  font-size: 18px;
+  margin-top: 2rem;
+  font-style: italic;
+  color: #7775A6;
+  
+}
+blockquote::before {
+  position: absolute;
+  content: "“";
+  font-size: 50px;
+  color: #dae1f2;
+}
+
+li {
+  margin: 0.1rem 0;
+}
+
+.Card {
+  display: block;
+  border-radius: 3px;
+  margin: 0 0 1rem 1.5rem;
+  line-height: 4rem;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  text-decoration: none;
+  flex-basis: 41%;
+  text-align: center;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.CardGrid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.TwitterButton {
+  display: inline-block;
+  margin: 0 1.5rem;
+  background-color: #1da1f2;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 3px 12px 3px 6px;
+  font-size: 14px;
+  line-height: 14px;
+  border-radius: 6px;
+}
+.TwitterButton img {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  vertical-align: -7px;
+}

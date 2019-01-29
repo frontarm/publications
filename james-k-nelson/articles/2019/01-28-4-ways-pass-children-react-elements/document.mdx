@@ -1,0 +1,271 @@
+import { Doc } from '@frontarm/doc'
+import TwitterDiscussionLink from './TwitterDiscussionLink'
+export const demoboardHelpers = {
+  'index.js': require('!raw-loader!./_index.js'),
+  'index-with-styles.html': require('!raw-loader!./_index-with-styles.html'),
+  'index-without-styles.html': require('!raw-loader!./_index-without-styles.html'),
+  'red-blue-styles.css': require('!raw-loader!./_red-blue-styles.css'),
+}
+
+Did you know that React gives you no less than **four** different ways to specify the children for a new React Element?
+
+
+## 1. Nesting JSX
+
+To start with, there's the obvious way: nesting the elemen's between its start and end tags, like the blue div in this example:
+
+```jsx
+//---
+maximizeLeftPanel: true
+//--- index.js
+ReactDOM.render(
+  <div className="red">
+    <div className="blue" />
+  </div>,
+  document.querySelector('#root')
+)
+//--- styles.css <-- red-blue-styles.css
+//--- index.html <-- index-with-styles.html
+```
+
+The obvious approach is... kinda obvious. But it gives you a hint to approach number two. Given that JSX compiles to JavaScript, there must be a pure JavaScript way to do the same thing. And while there's a good chance that you already know the corresponding vanilla JavaScript, if you don't, you can find out by clicking on the *Compiled* button in the above editor.
+
+And if you *do* click on the *Compiled* button, you'll see a couple calls to...
+
+
+## 2. `createElement()`
+
+JSX elements in a React project are transformed at build time into calls to `React.createElement()`. This function's first two arguments represent the elment's `type` and `props`, while any subsequent arguments represent the element's child nodes.
+
+```js
+React.createElement(
+  type,
+  props,
+
+  // You can pass as many children as you need - or none at all.
+  childNode1,
+  childNode2,
+)
+```
+
+For example, the two elements in the above JSX transpile to two separate calls to `React.createElement()`:
+
+```js
+React.createElement(
+  "div",
+  { className: "red" },
+  React.createElement("div", { className: "blue" })
+)
+```
+
+There are three important things to understand about `React.createElement()`:
+
+1.  It returns a plain old JavaScript object that contains all of the information that you passed into it.
+2.  It's first two arguments represent `type` and `props`, and any further arguments represent its `children`.
+3.  You can pass as many children as you'd like... or none at all.
+
+Simple, huh? But there's one curious thing about the object returned by `React.createElement()`. While the returned object has properties corresponding to the `type` and `props` arguments, it *doesn't* have a `children` property. Instead, the children are stored on `props.children`.
+
+```js
+//---
+rightPanel: console
+maximizeRightPanel: true
+lineCount: 12
+//--- index.js
+console.log(
+  React.createElement(
+    "div",
+    { className: "red" },
+    "Hello, friend!"
+  )
+)
+//--- index.html <-- index-without-styles.html
+```
+
+So what happens if you pass `React.createElement()` both a `children` **prop** along with the `children` **argument**? Let's find out!
+
+```js
+//---
+rightPanel: console
+maximizeRightPanel: true
+lineCount: 12
+//--- index.js
+console.log(
+  React.createElement(
+    "div",
+    {
+      children: "Props win!",
+      className: "red",
+    },
+    undefined
+  )
+)
+//--- index.html <-- index-without-styles.html
+```
+
+As you can see in the above editor's console, **the `children` prop is ignored in favor of the value passed via argument** -- which happens to be `undefined`. But this raises a question: what would happen if you *didn't* pass a third argument?
+
+This leads us to the third way to specify an element's `children`.
+
+
+## 3. Pass a `children` prop to `createElement()`
+
+When you pass a `children` prop to `createElement()`, *without* passing third (or subsequent) arguments, then that will become the element's children.
+
+```jsx
+//---
+maximizeLeftPanel: true
+//--- index.js
+ReactDOM.render(
+  React.createElement('div', {
+    children: React.createElement('div', {className: "blue" }),
+    className: "red",
+  }),
+  document.querySelector('#root')
+)
+//--- styles.css <-- red-blue-styles.css
+//--- index.html <-- index-with-styles.html
+```
+
+This has an interesting corollary: you can also pass elements via props *other* than `children`. In fact, you can pass *multiple* elements to a component using multiple props. This pattern is sometimes called slots -- and you can learn more about it with [Dave Ceddia's guide to slots](https://daveceddia.com/pluggable-slots-in-react-components/).
+
+Of course, you don't have to use raw JavaScript to pass a `children` prop -- which leads to the 4th and final way to specify an element's children...
+
+
+## 4. Pass a `children` prop with JSX
+
+Just as we started by transforming a JSX element into a call to `createElement()`, let's finish by rewriting the above with JSX:
+
+```jsx
+//---
+maximizeLeftPanel: true
+//--- index.js
+ReactDOM.render(
+  <div
+    children={<div className="white" />}
+    className="black"
+  />,
+  document.querySelector('#root')
+)
+//--- styles.css
+.black {
+  background-color: #000000;
+  height: 100px;
+  width: 100px;
+}
+.white {
+  background-color: #ffffff;
+  height: 50px;
+  left: 25px;
+  position: relative;
+  top: 25px;
+  width: 50px;
+}
+//--- index.html <-- index-with-styles.html
+```
+
+
+Ok, but... whhhy?
+-----------------
+
+Putting aside the question of whether you *can* pass children via `props` *<small>(you can)</small>*, let's ask a perhaps more important question: *should you?*
+
+It goes without saying that *usually*, it's clearer to specify a JSX element's children the standard way. But with that said, there are a couple situations where the ability to specify `children` as a prop comes in handy.
+
+
+### 1. Consuming Contexts
+
+When working with React context, you'll run into a small problem when you need to consume values from multiple contexts: you need to nest context consumers within each other to access multiple values. And so just when you thought that [Promises and async/await](/courses/async-javascript/) had banished callback pyramids from the idyllic land of JavaScript *forever*, you end up with this:
+
+```jsx
+function InvoiceScreen(props) {
+  return (
+    <RouteContext.Consumer>
+      {route =>
+        <AuthContext.Consumer>
+          {auth =>
+            <DataContext.Consumer>
+              {data =>
+                <InvoiceScreenImpl
+                  route={route}
+                  auth={auth}
+                  data={data}
+                  {...props}
+                />
+              }
+            </DataContext.Consumer>
+          }
+        </AuthContext.Consumer>
+      }
+    </NavRoute>
+  )
+}
+```
+
+The above code can be shortened by using the `children` prop, instead of nesting JSX elements:
+
+```jsx
+function InvoiceScreen(props) {
+  return (
+    <RouteContext.Consumer children={route =>
+      <AuthContext.Consumer children={auth =>
+        <DataContext.Consumer children={data =>
+          <InvoiceScreenImpl
+            route={route}
+            auth={auth}
+            data={data}
+            {...props}
+          />
+        } />
+      } />
+    } />
+  )
+}
+```
+
+Of course, this still isn't perfect. For perfection, you'll need to wait for the new React [Hooks API](https://reactjs.org/docs/hooks-reference.html), which will make consuming context a breeze.
+
+
+### 2. Passing Through Props
+
+<Doc.AsideTop>
+
+Suppose that you have a component that just wraps another component -- possibly transforming the props in some way,  before passing them through to a child component.
+
+In fact, you may have just seen such a component. To see what I mean, let me transform the previous `InvoiceScreen` example into plain JavaScript.
+
+```jsx
+function InvoiceScreen(props) {
+  return (
+    createElement(RouteContext.Consumer, { children: route =>
+      createElement(AuthContext.Consumer, { children: auth =>
+        createElement(DataContext.Consumer, { children: data =>
+          createElement(InvoiceScreenImpl, {
+            route,
+            auth,
+            data,
+            ...props
+          })
+        })
+      })
+    })
+  )
+}
+```
+
+You'll notice that each calls to `createElement()` in the above example only uses *two* arguments, so any value for `props.children` will be passed through to `<InvoiceScreenImpl>`.
+
+When you think about this, it makes a lot of sense. It would be confusing to have to specifically pass the `children` prop through. And luckily, you don't have to -- because React lets you specify children in an appropriate way for the situation!
+
+<!--
+<Doc.Details aside>
+
+For more details on passing props through to nested components, see my article on [Selectively passing through props, using object destructuring and spread](/articles/selectively-pass-through-props/).
+
+</Doc.Details>
+-->
+</Doc.AsideTop>
+
+---
+
+*Have anything to add to this article? Let me know in the <TwitterDiscussionLink>Twitter discussion</TwitterDiscussionLink>!*

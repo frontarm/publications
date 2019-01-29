@@ -1,0 +1,285 @@
+import { Doc } from '@frontarm/doc'
+import { NavLink } from 'react-navi'
+import TwitterDiscussionLink from './TwitterDiscussionLink'
+export const demoboardHelpers = { 
+  'index.html': require('!raw-loader!./_index.html')
+}
+
+When working with React, there are times when you'll want to pass around *groups* of React elements. And while it used to be that doing so required you to add useless container components or confusing arrays, React solved this last year by introducing **Fragments** -- a simple way to group elements without adding any extra markup.
+
+```jsx
+//--- index.js
+ReactDOM.render(
+  <ul>
+    <React.Fragment>
+      <li>The fragment element is not rendered to the DOM.</li>
+      <li>
+        You can confirm this by right clicking on one of these items
+        in the preview pane, and inspecting the markup in the browser
+        dev tools.
+      </li>
+    </React.Fragment>
+  </ul>,
+  document.querySelector("#root")
+)
+//--- index.html <-- index.html
+```
+
+`React.Fragment` -- as used in the above example -- is like a markupless component. When rendered to the DOM, **its children will be rendered by themselves**, making it possible to pass around groups of elements without introducing unnecessary markup. Fragments are also great for working with table and list markup (like the above), where it's just not possible to add an extra `<div>`.
+
+
+## `<>Fragment syntax</>`
+
+After using fragments for a while, you may run into an eensy-weensy issue: typing out `<React.Fragment>` is *bothersome* compared to typing `<div>`. And while this won't get in the way when fragments are truly necessary, it certainly can slow down adoption. Which is why, I suppose, fragments also come with a concise new syntax:
+
+```jsx
+//---
+leftPanel: transformedSource
+maximizeLeftPanel: false
+//--- index.js
+ReactDOM.render(
+  <>
+    <h1>Yo Dawg,</h1>
+    <p>
+      I heard you like fragments so
+      I <>put a <>fragment</> in your fragment</>.
+    </p>
+  </>,
+  document.querySelector("#root")
+)
+//--- index.html <-- index.html
+```
+
+As you can see, the `<>` and `</>` tags in JSX now correspond to `<React.Fragment>` and `</React.Fragment>`. There's nothing else special about them -- they compile down to the same thing as any other React element, with a `type` of `React.Fragment`:
+
+<Doc.AsideTop>
+<Doc.Details aside>
+
+Want to learn more about elements, components and props? Check out my [React (without the buzzwords)](/courses/learn-raw-react) course.
+
+</Doc.Details>
+
+```js
+React.createElement(
+  React.Fragment,
+  null,
+  ...childElements
+)
+```
+
+</Doc.AsideTop>
+
+---
+
+<Doc.Float minWidth='45%' style={{textAlign: 'center'}}>
+  <Doc.Image
+    src={require('./rover.svg')}
+    alt="rover"
+    width='300px'
+    title={`"I'm composed of tiny fragments too!"`}
+  />
+</Doc.Float>
+
+When fragments were first released, there wasn't much support for this syntax. But now that a year has passed, most major tools support it, including:
+
+- Babel 7+
+- TypeScript 2.6+
+- Prettier 1.9+
+- ESLint 3+ (along with babel-eslint 7)
+
+Of course, you don't have to worry about any of this if you're using [create-react-app](https://facebook.github.io/create-react-app/), because it has supported fragments from when they were first released!
+
+
+## Typical uses
+
+Fragments have now had plenty of time for them to make their way into real world codebases. I've taken a look through a few open source projects to see how Fragments are being used in practice -- and found a number of common use cases:
+
+
+### 1. Returning groups of elements
+
+You can use fragments to create components that return a list of elements without wrapping them in a container or array. This is useful for components that return form and text markup -- as wrapping the result in a container `<div>` can cause headaches when styling things.
+
+[Spectrum](http://spectrum.chat)'s source frequently uses fragment-returning components for this purpose. For example, take a look at the e-mail confirmation component:
+
+<Doc.AsideTop>
+
+```jsx{7,25}
+class UserEmailConfirmation extends React.Component {
+  render() {
+    const { emailError, email, isLoading } = this.state;
+    const { user } = this.props;
+
+    return (
+      <React.Fragment>
+        <EmailForm
+          defaultValue={email}
+          loading={isLoading}
+          onChange={this.handleEmailChange}
+          onSubmit={this.init}
+          style={{ marginTop: '8px', marginBottom: '8px' }}
+        />
+
+        {user.pendingEmail && (
+          <Notice>
+            A confirmation link was sent to {user.pendingEmail}. Click
+            the confirmation link and then return to this page. You can
+            resend the confirmation here, or enter a new email address.
+          </Notice>
+        )}
+
+        {emailError && <Error>{emailError}</Error>}
+      </React.Fragment>
+    )
+  }
+}
+```
+
+<Doc.Details aside>
+
+Spectrum was recently acquired by GitHub, but they're still open source!
+
+[See this example at GitHub](https://github.com/withspectrum/spectrum/blob/181cf90f8d1c49aeb97f0dbb80359daa0a1343a3/src/components/userEmailConfirmation/index.js#L89)
+
+</Doc.Details>
+</Doc.AsideTop>
+
+
+Similarly, you can use fragments to return groups of elements from render functions. Wordpress' [Calypso](https://github.com/Automattic/wp-calypso/) frontend frequently uses this pattern to inject a `translate` function for internationalization:
+
+<Doc.AsideTop>
+
+```jsx{3,16}
+<Step name="my-sites" target="my-sites" placement="below" arrow="top-left">
+  { ( { translate } ) => (
+    <Fragment>
+      <p>
+        { translate(
+          "{{strong}}First things first.{{/strong}} Up here, you'll " +
+            "find tools for managing your site's content and design.",
+          {
+            components: {
+              strong: <strong />,
+            },
+          }
+        ) }
+      </p>
+      <Continue click icon="my-sites" step="sidebar" target="my-sites" />
+    </Fragment>
+  ) }
+</Step>
+```
+
+<Doc.Details aside>
+
+Note that Wordpress imports `Fragment` from the `react` package and uses it by itself, without qualifying it as `React.Fragment`.
+
+[See this example at GitHub](https://github.com/Automattic/wp-calypso/blob/59bdfeeb97eda4266ad39410cb0a074d2c88dbc8/client/layout/guided-tours/tours/jetpack-basic-tour.js#L68)
+<br />
+
+</Doc.Details>
+</Doc.AsideTop>
+
+### 2. Conditionally rendering groups of elements
+
+Fragments make it far easier to conditionally render whole groups of elements without adding unnecessary markup. For example, they can be used with the ternary operator to switch an element's content depending on the value of a prop:
+
+```jsx{5,11,13,19}
+export function ResetPasswordScreen({ hasPassword, name, ...formProps }) {
+  return (
+    <Layout>
+      {hasPassword ? (
+        <>
+          <h3>Reset your password</h3>
+          <p>
+            To finish resetting your password, enter your new password
+            here and hit the "Reset" button.
+          </p>
+        </>
+      ) : (
+        <>
+          <h3>Hi {name}!</h3>
+          <p>Thanks for joining!</p>
+          <p>
+            Just one more step - please pick a password for your account:
+          </p>
+        </>
+      )}
+      <ResetPasswordForm {...formProps} />
+    </Layout>
+  )
+}
+```
+
+
+## Fragments with arrays
+
+Fragments have one more powerful feature, which I've saved until last as it is rarely used. But when you *do* need this feature, it is invaluable:
+
+**Fragments can have `key` props!**
+
+<Doc.AsideTop>
+
+```jsx
+<React.Fragment key='somevalue'>
+  ...
+</React.Fragment>
+```
+
+<Doc.Details aside>
+
+To specify a `key` for a fragment, you'll need to use the standard JSX element syntax; you can't use the new `<></>` syntax.
+
+</Doc.Details>
+</Doc.AsideTop>
+
+
+Why would you want to give a Fragment a key? Well, it allows fragments to be used as items in arrays. Which in turn makes it possible to splice elements into text -- and all without introducing any unnecessary markup.
+
+For example, the console view in Frontend Armory's [Demoboard](/demoboard/) editor uses keyed fragments to replace newline characters with `<br>` elements... and the resulting code is small enough that it would make for a great exercise!
+
+**See if you can use React Fragments to render the newline characters in the below string as `<br>` tags, without introducing any extra markup.**
+
+*Once you've given it a try, you can take a look at my solution by clicking the *Solution* tab at the bottom of the editor.*
+
+```jsx
+//---
+maximizeLeftPanel: true
+theme: dark
+//--- index.js
+let message = `
+  Hello, there!
+  HTML doesn't render new line characters by default,
+  but you can add them back in as <br> tags!
+`
+
+// You'll need to replace the line break characters in this string
+// with `<br>` elements.
+let messageWithLineBreaks = message
+
+ReactDOM.render(
+  <div>{messageWithLineBreaks}</div>,
+  document.querySelector('#root')
+)
+//--- solution:index.js
+let message = `
+  Hello, there!
+  HTML doesn't render new line characters by default,
+  but you can add them back in as <br> tags!
+`
+
+let messageWithLineBreaks =
+  message.split('\n').map((line, i, lines) =>
+    <React.Fragment key={i}>
+      {line}
+      {i !== lines.length - 1 && <br />}
+    </React.Fragment>
+  )
+  
+ReactDOM.render(
+  <div>{messageWithLineBreaks}</div>,
+  document.querySelector('#root')
+)
+//--- index.html <-- index.html
+```
+
+Thanks so much for reading! And if you know of any more uses for React Fragments, make sure to let everyone know in the <TwitterDiscussionLink>twitter discussion</TwitterDiscussionLink>!

@@ -1,6 +1,8 @@
 import { Author } from 'shared/types'
 
 const author: Author = {
+  path: 'james-k-nelson',
+
   name: 'James K Nelson',
   shortName: 'James',
   image: require('./james-k-nelson.jpg'),

@@ -2,7 +2,7 @@ import * as React from 'react'
 import { createDocumentPage } from 'shared/pages/createDocumentPage'
 
 export default createDocumentPage({
-  title: "Resuable Time Travel with React Hooks and Immer",
+  title: "Reusable Time Travel with React Hooks and Immer",
   tags: ['react', 'immer'],
   blurb: (
     <p>

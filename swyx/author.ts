@@ -7,7 +7,7 @@ const author: Author = {
   shortName: 'swyx',
   
   image: require('./swyx.jpg'),
-  bio: `TODO`,
+  bio: `Infinite Builder working on DX at Netlify.`,
 
   location: "Manhattan, NY",
   twitter: "swyx",

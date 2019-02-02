@@ -1,0 +1,112 @@
+import { Doc } from '@frontarm/doc'
+
+More and more developers are switching to CSS-in-JS, including big names like Microsoft, Atlassian, and... the Eurovision song contest! And while I [haven't](/james-k-nelson/how-can-i-use-css-in-js-securely/) always been a huge fan of CSS-in-JS, even *I'm* coming around to its benefits:
+
+- It lets you easily share variables between JavaScript and CSS [<small>(just don't forget to escape them)</small>](/james-k-nelson/how-can-i-use-css-in-js-securely/).
+- It's a boon for tooling, making it easier to remove dead code, and to send the minimum amount of CSS possible.
+- And most importantly, it encourages writing CSS in a composable fashion.
+
+It looks like CSS-in-JS will dominate the styling of web apps for the foreseeable future. But web *apps* only make up a fraction of the web, because content is still king -- as the meteoric rise of Gatsby has made apparent.
+
+As a React developer, there's as good a chance as any that you'll be working on statically rendered web *sites*. And as I discovered while building [create-react-blog](https://github.com/frontarm/create-react-blog) and Frontend Armory, using CSS-in-JS for statically rendered sites still comes with a few caveats...
+
+<Doc.Details aside>
+
+What's the difference between [static and server rendering?](/james-k-nelson/static-vs-server-rendering/)
+
+</Doc.Details>
+
+## Avoiding Flashes Of Unstyled Content
+
+The idea behind static rendering is to speed up your site by pre-rendering some HTML for each page, which can be displayed to users before the page's JavaScript has finished loading. Of course, with CSS-in-JS, your styles are in, well, the JavaScript. And this presents a problem -- the initial HTML will be unstyled until the JavaScript finished loading.
+
+gif
+
+Luckily, the teams maintaining [styled-components](https://www.styled-components.com/) and [emotion](https://emotion.sh/) allow you to solve this with a little extra code. For instance, styled-components provides the `ServerStyleSheet` object, which allows you to statically render your styles at the same time as you statically render your HTML. Then, you just send the statically rendered `<style>` tag as part of your HTML:
+
+```jsx
+//---
+rightPanel: console
+//--- render.js
+import React from 'react@next'
+import { renderToString } from 'react-dom@next/server'
+import styled, { ServerStyleSheet } from 'styled-components'
+
+// A styled component
+const Button = styled.a`
+  border: 2px solid palevioletred;
+  border-radius: 3px;
+  color: palevioletred;
+  display: inline-block;
+  font-family: sans-serif;
+  padding: 0.5rem 1rem;
+  margin: 0.5rem 1rem;
+`
+
+// The React element that will be statically rendered
+const pageContent = (
+  <Button
+    as={'a'}
+    href='https://www.youtube.com/watch?v=FpBJih02aYU'
+    target='_blank'>
+    Not my Gumdrop Buttons!
+  </Button>
+)
+
+// `ServerStyleSheet` can collect styles from your statically rendered
+// HTML, and then output them as a string of `<style>` tags.
+const sheet = new ServerStyleSheet()
+const html = renderToString(sheet.collectStyles(pageContent))
+const styleTags = sheet.getStyleTags()
+
+console.log('Static stylesheet:\n', styleTags)
+
+document.getElementById('root').innerHTML = styleTags+html
+//--- index.js
+// DON'T DO THIS. It's a hack to tell styled-components
+// that server rendering is allowed, even in the browser.
+import 'react@next'
+const {StyleSheet} = require('styled-components').__DO_NOT_USE_OR_YOU_WILL_BE_HAUNTED_BY_SPOOKY_GHOSTS
+StyleSheet.reset(true)
+require('./render')
+```
+
+By pre-rendering a `<style>` tag and sending it with your HTML, you'll avoid the flash of unstyled content -- but there's a catch. As `ServerStyleSheet` only produces styles for the *initial* props, any use of component state, `componentDidMount` or `componentDidUpdate` will not be reflected in the server rendered styles. Given that your initially rendered HTML has the same constraint, this shouldn't be a problem. But if you do need a little help fetching the initial data for each of your app's URL, take a look at [Navi](/navi/) -- a router that was built with static/server rendering in mind. But I digress.
+
+Statically rendering your styles has another benefit: it reduces the amount of CSS that's required on the page's initial load. This is because the rendered `<style>` tags only contain the **critical CSS** that is required for the initial, static HTML. The rest of the CSS is still managed with JavaScript, letting you split it out via dynamic `import()`. This can be a massive performance boon... or it can result in megabytes of CSS which is invalidated on every update -- even for updates that *don't* touch the content.
+
+
+## Inline vs. External Stylesheets
+
+If you take a look at the generated `<style>` tag in the above example, you'll notice that it has a `data-styled` attribute. This is important, because it shows that styled-components is tied to that `<style>` tag. You can't reliably extract the contents of that `<style>` tag into a CSS file referenced by `<link>`. Which is... maybe not that much of a problem?
+
+After all, why would you want to put your styles in a separate file anyway? 
+
+To answer this question, consider [the main reason that you'd statically render](/james-k-nelson/static-vs-server-rendering/) in the first place: it lets you serve JavaScript from a CDN. Now the thing about assets served from a CDN is that they're often cached with expiry dates in the far future. And as such, changes to these assets require new filenames in order to bypass the cache.
+
+image
+
+Naturally, changes to the names of JavaScript files will require corresponding changes to the HTML that references them. As a result, your app's HTML files can't be cached on users' browsers -- and neither can the `<style>` tags that are embedded in them. And due to the design of Webpack, changes to *any* JavaScript file in your project will usually require a change to *every* `<script>` tag, and thus HTML file, in your app. 
+
+For apps with few pages or small `<style>` tags, this is a non-issue. But for content-focused websites, the numbers start to add up. For example, say that you're running a site with 1000 pages, and with 25kb of critical CSS. Across all your HTML files, you'll now have 25mb of CSS in `<style>` tags; and *all* of that CSS needs to be pushed to the CDN with every change to your site -- even if your only change is to fix a typo!
+
+
+## You can still use CSS-in-JS, though.
+
+Is it a problem to have to push all of your inline CSS to a CDN with every change? Is it a problem if users can't cache the critical CSS? The answer is -- of course -- *it depends*. In particular, there are three conditions which can cause issues:
+
+1. If you have many pages with a large amount of critical CSS
+2. If your content is frequently updated
+3. If your site gets a lot of traffic
+
+In particular, if your site meets *all three* of these conditions, then there's a good chance that you can improve performance (and save on hosting costs) by moving some of your CSS out to separate CSS files. Keep in mind that you can continue using CSS-in-JS alongside plain CSS -- you'll just want to keep the size of your critical CSS manageable.
+
+Of course, styled-components isn't the only kid on the block. The next most popular tool, emotion, has much the same story as styled-components. But there's also [linaria](https://linaria.now.sh/) -- a CSS-in-JS tool that is more focused towards static rendering. If you want to use CSS-in-JS, but styled-components doesn't suit your requirements, then linaria is definitely worth checking out!
+
+But maybe your heart is set on styled-components -- after all, it's got an all-star team and a huge community. And importantly, it's open source, so you can help out! The styled-components team is currently working to make it possible to extract cacheable CSS -- if you'd like to chip in, take a look at [this Pull Request](https://github.com/styled-components/styled-components/pull/2357).
+
+Lastly, it must be said that while CSS-in-JS is a great option, it's *not* a necessity. CSS Modules and SASS solve most of the same issues, while working out of the box with create-react-app and [Navi](/navi/). That's why [create-react-blog](https://github.com/frontarm/create-react-blog) and Frontend Armory are still built with CSS Modules. But are there situations where it'd make sense to switch them out for styled-components? *Absolutely.*
+
+---
+
+*Have you noticed how ridiculously fast Frontend Armory is? While building it, I've spent gobs of time learning the ins and outs of static rendering and code splitting, and now I want to save you the trouble of doing the same. So. If you're building a React app and speed affects your bottom line (or you just want a snappy UI), then you need to see my upcoming course: **React in Practice**. More details are coming soon; [join Frontend Armory](/members/register/) now to be the first to find out -- it's free!*

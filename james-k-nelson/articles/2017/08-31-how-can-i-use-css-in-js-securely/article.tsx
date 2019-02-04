@@ -12,6 +12,6 @@ export default createLegacyDocumentPage({
     <p>
       Import the wrong <code>&lt;Tooltip&gt;</code> component and your users' passwords will grow legs. Follow this guide to stay safe.
     </p>,
-  updatedAt: "2018-08-15",
+  updatedAt: "2019-02-02",
   importMDX: () => import('./how-can-i-use-css-in-js-securely.md'),
 })

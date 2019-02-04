@@ -1,10 +1,6 @@
 import { Housekeeping, Spoiler, Important, Caution, Reference, Story, Details, Comment, Aside } from 'shared/documentHelpers' 
 
-**Update August 2018:** *I first published this article almost a year ago... and *all* of [the](https://github.com/paypal/glamorous/issues/300) [discussed](https://github.com/styled-components/styled-components/issues/1105#issuecomment-324302758) [vulnerabilities](https://github.com/jxnblk/rebass/issues/318) are **still** unfixed.*
-
-***You can still expose passwords and other private data by using a popular library's `<Tooltip>` component.***
-
-*It sounds crazy, but that's the world we live in. Read on to find out why.*
+**Update February 2019:** Version 3 of [Rebass](https://rebassjs.org/) solves the issue mentioned in this article, and glamorous has been deprecated by its maintainer. However, [styled-components](https://styled-components.com) (and [emotion](https://emotion.sh)) still don't perform any auto-escaping of interpolated variables - so be careful!*
 
 ---
 

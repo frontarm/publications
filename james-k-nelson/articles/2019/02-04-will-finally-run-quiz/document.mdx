@@ -1,0 +1,158 @@
+import { Doc } from '@frontarm/doc'
+import { NavLink } from 'react-navi'
+
+With the advent of `async`/`await`, I've recently found myself using a lot more `try`/`catch`/`finally` in my code. But honestly, I'm a little out of practice with `finally`. When I went to actually use it, I was a little unsure of its finer details. So I put together a few examples.
+
+
+## When you `throw` a `catch`
+
+Consider the case where you throw an exception *within* a `catch` block. There's nothing to catch your `throw` before it exits the function. Does `finally` run?
+
+To find out, just uncomment the `example()` call at the bottom of the editor!
+
+```js
+//---
+viewerURL: /index.js
+//--- index.js
+function example() {
+  try {
+    fail()
+  }
+  catch (e) {
+    console.log("Will finally run?")
+    throw e
+  }
+  finally {
+    console.log("FINALLY RUNS!")
+  }
+  console.log("This shouldn't be called eh?")
+}
+
+// example()
+```
+
+<Doc.Spoiler>
+
+The finally runs, even though the last log statement doesn't!
+
+You can see that `finally` is a little special; it lets you run things between throwing an error and leaving the function, even if that error was thrown inside a `catch` block.
+
+</Doc.Spoiler>
+
+
+## Try without catch
+
+Did you know that if you supply a `finally` block, you don't need to supply a `catch` block too? You probably did, but it was worth asking!
+
+So next question: does that `finally` block get called even if nothing goes wrong in the `try` block? If you're not sure, uncomment the `example()` at the bottom of the editor to find out.
+
+```js
+//---
+viewerURL: /index.js
+//--- index.js
+function example() {
+  try {
+    console.log("Hakuna matata")
+  }
+  finally {
+    console.log("What a wonderful phrase!")
+  }
+}
+
+// example()
+```
+
+<Doc.Spoiler>
+
+Yep, `finally` is called even when nothing goes wrong. Of course, it also gets called when something *does* go wrong.
+
+That's the idea behind `finally` -- it lets you handle both cases, as you can see in this example:
+
+</Doc.Spoiler>
+
+```js
+//---
+viewerURL: /index.js
+//--- index.js
+function example() {
+  try {
+    console.log("I shall try and fail");
+    fail();
+  }
+  catch (e) {
+    console.log("Then be caught");
+  }
+  finally {
+    console.log("And finally something?");
+  }
+}
+
+// example()
+```
+
+
+## Return and finally
+
+So finally lets you clean up after yourself when exceptions occur. But what about when nothing goes wrong and you just `return` from the function like normal... in a `try` block?
+
+Take a look at the below example. Is it possible that the `finally` block within `example()` can run *after* you've already hit a `return` statement? Uncomment the `example()` at the bottom of the editor to find out!
+
+```js
+//---
+viewerURL: /index.js
+//--- index.js
+function example() {
+  try {
+    console.log("I'm picking up my ball and going home.")
+    return
+  }
+  finally {
+    console.log('Finally?')
+  }
+}
+
+// example()
+```
+
+
+## The Rule
+
+**The `finally` block on a `try`/`catch`/`finally` will *always* run** -- even if you bail early with an exception or a `return`.
+
+This is what makes it so useful; it's the perfect place to put code that *needs* to run regardless of what happens, like cleanup code for error-prone IO. In fact, that's what inspired this article.
+
+
+## I used `finally` for...
+
+Frontend Armory is a statically rendered website; it's built with a tool called [Navi](https://frontarm.com/navi/), which lets you configure a `renderPageToString()` function that will be used to render each page.
+
+In order to make sure each call to `renderPageToString()` is independent of the previous one, Navi uses `try`/`catch`/`finally` and some obscure node-fu to unload any modules that are loaded during the rendering process.
+
+<Doc.Details aside>
+
+You can take a look at the [full source](https://github.com/frontarm/navi/tree/master/packages/navi-scripts/lib) for Navi's static renderer on GitHub
+
+</Doc.Details>
+
+```js
+let oldCacheKeys = new Set(Object.keys(require.cache))
+try {
+  html = await renderPageToString(options)
+}
+catch (e) {
+  throw e
+}
+finally {
+  process.env.NODE_ENV = nodeEnv
+
+  for (let key of Object.keys(require.cache)) {
+    if (!oldCacheKeys.has(key)) {
+      delete require.cache[key]
+    }
+  }
+}
+```
+
+As you can see from the above example, `try`/`catch`/`finally` also work great with JavaScript's new `async`/`await` syntax. So if this has reminded you that you need to brush up on `async`/`await`, now's the time to mosey on over to my [Mastering Asynchronous JavaScript](/courses/async-javascript/) course!
+
+But that's it for today. Thanks so much for reading! If you have any questions or comments, shoot me a Tweet or DM at [@james_k_nelson](https://twitter.com/james_k_nelson). And until next time, happy coding :-)

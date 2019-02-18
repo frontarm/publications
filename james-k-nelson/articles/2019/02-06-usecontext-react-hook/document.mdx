@@ -1,0 +1,144 @@
+import { Doc } from '@frontarm/doc'
+
+<Doc.AsideTop>
+
+Earlier today, the React team released React 16.8, and along with it the eagerly awaited **hooks** API.
+
+If you haven’t yet heard, React's hooks API opens a up a whole new way of writing components - and the internet is abuzz with talk of the possibilities. Of course, with such a major change, many people are also asking the question: do we really need this new API?
+
+In this article, I’m going to skip this question and instead try to answer something simpler and more useful: are there any situations where hooks are just *obviously better*? My answer is *yes*, and I think you’ll agree after seeing just how much `useContext` improves readability.
+
+<Doc.Details aside>
+
+As of today, typing `import React from 'react'` in Frontend Armory's [Demoboard](/demoboard/) will load React 16.8, with full hooks support!
+
+</Doc.Details>
+</Doc.AsideTop>
+
+## Context 😕
+
+Since React’s beginnings, one of the least satisfying parts of using it has been has been the process of passing data through many levels of your component tree. Initially, this could only be accomplished by *prop drilling*, i.e. manually passing props through every level of your tree. This was obviously cumbersome, so the React team give us an experimental Context API to work with, before releasing an official Context API early last year. The thing is, even the official Context API has its quirks.
+
+After consuming data from a Context, you’ll typically only have access to the consumed data within a render function, as seen in this example.
+
+```js
+//--- App.js
+import React from 'react'
+
+const CurrentRoute = React.createContext({ path: '/welcome' })
+
+export default function App() {
+  return (
+    <CurrentRoute.Consumer>
+      {currentRoute => 
+        currentRoute.path === '/welcome' &&
+        "Welcome!"
+      }
+    </CurrentRoute.Consumer>
+  )
+}
+//--- index.js
+import React from 'react'
+import ReactDOM from 'react-dom'
+import App from './App'
+
+ReactDOM.render(<App />, document.getElementById('root'))
+```
+
+In the above example, only a single piece of data is being consumed. And honestly, this looks ok. It's easy enough to understand what's going on. But imagine for minute that you want to consume values from *three* Context objects:
+
+```js
+//--- App.js
+import React from 'react'
+
+const CurrentRoute = React.createContext({ path: '/welcome' })
+const CurrentUser = React.createContext(undefined)
+const IsStatic = React.createContext(false)
+
+export default function App() {
+  return (
+    <CurrentRoute.Consumer>
+      {currentRoute =>
+        <CurrentUser.Consumer>
+          {currentUser =>
+            <IsStatic.Consumer>
+              {isStatic =>
+                !isStatic &&
+                currentRoute.path === '/welcome' &&
+                (currentUser
+                  ? `Welcome back, ${currentUser.name}!`
+                  : 'Welcome!'
+                )
+              }
+            </IsStatic.Consumer>
+          }
+        </CurrentUser.Consumer>
+      }
+    </CurrentRoute.Consumer>
+  )
+}
+//--- index.js
+import React from 'react'
+import ReactDOM from 'react-dom'
+import App from './App'
+
+ReactDOM.render(<App />, document.getElementById('root'))
+```
+
+While this second example *works*, it's starting to look unwieldy. You can see that there's a callback pyramid starting to form – and the more context you consume, the worse it’s gonna get. Unless, that is, you use the new `useContext()` hook.
+
+## `useContext()` 😆
+
+Starting with React 16.8, you now have `useContext()`: a new, simpler way to consume data from multiple contexts. Here's how you'd use it to simplify the above example:
+
+```js
+//--- App.js
+import React, { useContext } from 'react'
+
+const CurrentRoute = React.createContext({ path: '/welcome' })
+const CurrentUser = React.createContext(undefined)
+const IsStatic = React.createContext(false)
+
+export default function App() {
+  let currentRoute = useContext(CurrentRoute)
+  let currentUser = useContext(CurrentUser)
+  let isStatic = useContext(IsStatic)
+
+  return (
+    !isStatic &&
+    currentRoute.path === '/welcome' &&
+    (currentUser
+      ? `Welcome back, ${currentUser.name}!`
+      : 'Welcome!'
+    )
+  )
+}
+//--- index.js
+import React from 'react'
+import ReactDOM from 'react-dom'
+import App from './App'
+
+ReactDOM.render(<App />, document.getElementById('root'))
+```
+
+Neat, huh? But before moving on, I want you to try and imagine something for a minute.
+
+**Imagine that *both* of the above code examples are boring old APIs that you've been using for years.**
+
+Have you gotten in that frame of mind? Great! So I want to ask you a question:
+
+**Which API is clearer?**
+
+To me, the answer seems obvious. The second example wins the readability contest *hands down*. To bring back an old React cliché - it's much easier to reason about.
+
+Ok, so let's come back to the read world for a moment (thanks for going through this exercise with me!) It's February 2019, and hooks are *brand spankin' new.* They're a big change, and there's going to be a lot of uncertainty around them. But you now have at least *one* solid answer: hooks are definitely an improvement for consuming context.
+
+So the next question is, what else are hooks good for? I'm as keen to find out as you are, and I'll be making sure to share what I learn on this blog. Don't want to miss it? [Join Frontend Armory](/members/register/) now to stay in the loop -- it's free!
+
+In the meantime, if you're interested in learning hooks then there's a few resources you can check out:
+
+- The [official hooks documentation](https://reactjs.org/docs/hooks-intro.html) is incredibly informative, and I highly recommend you take a look.
+- For a tutorial with live editors, take a look at @swyx's guide to [Reusable Time Travel with React Hooks and Immer](/swyx/reusable-time-travel-react-hooks-immer/).
+- If you'd like to see how `useContext()` can be used in real world code, take a look at [this commit](https://github.com/frontarm/navi/blob/6a3fcb9834e9d3efb2e4178210817c06f2e2f535/examples/basic/src/App.js) for [Navi](/navi/), the router that drives Frontend Armory.
+
+Thanks so much for reading -- it's great to know that there are people like you who find this useful enough to read all the way to the end 😊 So until next time, happy engineering!

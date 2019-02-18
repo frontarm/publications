@@ -1,0 +1,402 @@
+import { Doc } from '@frontarm/doc'
+export const demoboardHelpers = {
+  'api.js': require('!raw-loader!./demo/api.js'),
+  'index.js': require('!raw-loader!./demo/index.js'),
+  'product.js': require('!raw-loader!./demo/product.js'),
+  'Layout.js': require('!raw-loader!./demo/Layout.js'),
+  'Landing.js': require('!raw-loader!./demo/Landing.js'),
+  'styles.css': require('!raw-loader!./demo/styles.css'),
+}
+
+<Doc.AsideTop>
+
+So the React team just released a new API called *Hooks*. It's amazing. It lets you declaratively model state and side effects. You've probably read about it elsewhere on the internet, so I'm not going to tell you about hooks themselves, but...
+
+With a completely new API comes completely new possibilities. And to cut to the chase, Navi's new `<Router />` component uses Hooks and Suspense and its gonna blow your mind 🤯. It lets you do things like visualize transitions between pages with an animated loading bar... in 3 lines of code. And the `navi-scripts` tool lets you statically render create-react-app based projects, *without ejecting from create-react-app*.
+
+Amazing, right? But before we break out the hooks, *what the hell is a Navi `<Router />`?*
+
+<Doc.Details aside title="TL;DR?">
+
+Asynchronous routing has never been this simple.
+
+- [View the docs &raquo;](/navi/)
+- [View the GitHub repo &raquo;](https://github.com/frontarm/navi)
+
+</Doc.Details>
+</Doc.AsideTop>
+
+## How many routes could a `<Router routes />` route...
+
+It could route **over 9000** routes. In fact, it could route even more, because it lets you dynamically `import()` entire routing trees on demand. But how?
+
+The trick is in how you declare routes. It's simple -- you get a bunch of functions like `lazy()`, `mount()` and `route()`, and you just mash them together to map URLs to (possibly asynchronous) content.
+
+```jsx{2,3,8}
+const routes =
+  mount({
+    '/': route({
+      title: 'My Shop',
+      getData: () => api.fetchProducts(),
+      view: <ShopLandingPage />,
+    }),
+    '/products': lazy(() => import('./productsRoutes')),
+  })
+
+<Router routes={routes} />
+```
+
+Ok, so you've got a `<Router>` with a couple routes, including a shop's landing page and a lazily loadable `/products` URL. Next step: you need to decide where to render the current route's `view` element. And to do that, you just plonk down a `<View />` somewhere inside your `<Router>`.
+
+```jsx{4}
+ReactDOM.render(
+  <Router routes={routes}>
+    <Layout>
+      <View />
+    </Layout>
+  </Router>,
+  document.getElementById('root')
+)
+```
+
+<Doc.AsideTop>
+
+Simple, huh? But waaait a minute... what if you view the lazily loadable `/products` URL? Then the route will be loaded via an `import()`, which returns a Promise, and so at first there'll be nothing to render. Luckily, React's new [`<Suspense>`](https://reactjs.org/docs/react-api.html#reactsuspense) feature lets you declaratively wait for promises to resolve. So just wrap your `<View>` in a `<Suspense>` tag, and you're off and racing!
+
+```
+//---
+viewerURL: /product/hat
+//--- index.js <-- index.js
+//--- product.js <-- product.js
+//--- Landing.js <-- Landing.js
+//--- Layout.js <-- Layout.js
+//--- api.js <-- api.js
+//--- styles.css <-- styles.css
+```
+
+<Doc.Details aside title={<>Isn't <code>&lt;View&gt;</code> part of react-native?</>}>
+
+It is! But react-native apps would be far better served by [react-native-navigation](https://github.com/wix/react-native-navigation) or [react-navigation](https://reactnavigation.org/) than by Navi.
+
+</Doc.Details>
+</Doc.AsideTop>
+
+## Bro, just give me the hooks?
+
+Ok, so you've seen how to render a route's view. But your route also defined a `getData()` function.
+
+```jsx
+route({
+  title: 'My Shop',
+  getData: () => api.fetch('/products'),
+  view: <Landing />,
+})
+```
+
+*How do you access the data?* With React hooks!
+
+Navi's `useCurrentRoute()` hook can be called from any function component that is rendered within the `<Router>` tag. It returns a [`Route`](/navi/en/reference/data-types/#route) object that contains everything that Navi knows about the current URL.
+
+```js
+//---
+editorPathname: /Landing.js
+rightPanel: console
+//--- index.js <-- index.js
+//--- product.js <-- product.js
+//--- Landing.js
+import React from 'react'
+import { Link, useCurrentRoute } from 'react-navi'
+
+export default function Landing() {
+  // useCurrentRoute returns the lastest loaded Route object
+  let route = useCurrentRoute()
+  let data = route.data
+  let productIds = Object.keys(data)
+
+  console.log('views', route.views)
+  console.log('url', route.url)
+  console.log('data', route.data)
+  console.log('status', route.status)
+  
+  return (
+    <ul>
+      {productIds.map(id => 
+        <li key={id}>
+          <Link href={`/product/${id}`}>{data[id].title}</Link>
+        </li>
+      )}
+    </ul>
+  )
+}
+//--- Layout.js <-- Layout.js
+//--- api.js <-- api.js
+//--- styles.css <-- styles.css
+```
+
+Ok. So far, so good. But imagine that you've just clicked a link to `/products` -- which is dynamically imported. It's going to take some time to fetch the route, so what are you going to display in the meantime?
+
+## Visualizing loading routes
+
+When routes take a long time to load, you'll want to display some sort of loading indicator to the user -- and there a number of approaches that you *could* take. One option would be to show a fallback with `<Suspense>`, just as with the initial load. But this looks a bit shit.
+
+<img
+  src={require('./suspense-loading.gif')}
+  alt="terrible looking loading"
+  style={{ border: '1px solid #f0f0f0', borderRadius: '1rem' }}
+/>
+
+<Doc.Details aside>
+
+Suspense should improve with time, and there are already plans to improve support for cases like this. The caveat is that it [could be a while](https://reactjs.org/blog/2018/11/27/react-16-roadmap.html#suspense-for-server-rendering) before it works on the server.
+
+</Doc.Details>
+
+What you'd *really* like to do is to display a loading bar over the current page while the next route loads... well, unless the transition only takes 100ms. Then you probably just want to keep displaying the current page until the next one is ready, because showing a loading bar for only 100ms also looks a bit shit.
+
+<img
+  src={require('./no-delay-loading.gif')}
+  alt="loading indicator with no delay"
+  style={{ border: '1px solid #f0f0f0', borderRadius: '1rem' }}
+/>
+
+There's just one problem. Doing this with currently available tools is ridiculously hard, right? Well actually... You can add it to the above demo in just 3 lines of code, using the `useLoadingRoute()` hook and the `react-loading-indicator` package.
+
+```js
+//---
+editorPathname: /Layout.js
+//--- index.js <-- index.js
+//--- product.js <-- product.js
+//--- Landing.js <-- Landing.js
+//--- Layout.js <-- Layout.js
+//--- api.js
+import { NotFoundError } from 'navi'
+
+const db = {
+  hat: {
+    emoji: '🧢',
+    title: 'Hat',
+    price: '$50.00',
+  },
+  flamethrower: {
+    emoji: '🔥🔫',
+    title: 'Not a flamethrower',
+    price: '$500.00',
+  },
+}
+
+export default {
+  fetchProduct: async (id) => {
+    await delay(1000)
+    let product = await db[id]
+    if (!product) {
+      throw new NotFoundError()
+    }
+    return product
+  },
+  fetchProducts: async () => {
+    await delay(100)
+    return db
+  }
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+//--- styles.css <-- styles.css
+```
+
+Go ahead and try clicking between these pages a few times. Did you notice how smooth the transition is? No? It was so smooth that you didn't notice anything particularly special? Great! *That's exactly the experience that your users want.*
+
+Here's how it works: `useCurrentRoute()` returns the most recent *completely loaded* route. And `useLoadingRoute()` returns any requested-but-not-yet-completely-loaded route. Or if the user *hasn't* just clicked a link, it returns `undefined`. 
+
+Want to display a loading bar while pages load? Then just call `useLoadingRoute()`, check if there's a value, and render a loading bar if there is! CSS transitions let you do the rest.
+
+## More neat tricks
+
+I'm not going to drop the entire set of [guides](/navi/en/guides/getting-started/), [API reference](/navi/en/reference/react-components-hooks/), and docs on [integrating with other tools](/navi/en/integrations/react-router/) on you right now. You're reading a blog post, so you might not have time for all that juicy information. But let me ask you a question:
+
+*What happens if the route *doesn't* load?*
+
+One of the things about asynchronous data and views is that sometimes they *don't bloody work*. Luckily, React has a great tool for dealing with things that don't bloody work: Error Boundaries.
+
+Let's rewind for a moment to the `<Suspense>` tag that wraps your `<View />`.  When `<View />` encounters a not-yet-loaded route, it *throws a promise*, which effectively asks React to *please show the fallback for a moment*. You can imagine that `<Suspense>` catches that promise, and then re-renders its children once the promise resolves.
+
+Similarly, if `<View />` finds that `getView()` or `getData()` have thrown an error, then it re-throws that error. In fact, if the router encounters a 404-page-gone-for-a-long-stroll error, then `<View />` will throw that, too. These errors can be caught by [Error Boundary](https://reactjs.org/docs/error-boundaries.html) components. For the most part, you'll need to make your own error boundaries, but Navi includes a [`<NotFoundBoundary>`](/navi/en/reference/react-components-hooks/#notfoundboundary) to show you how its done:
+
+```jsx
+//---
+editorPathname: /Layout.js
+viewerURL: /product/flamethrower
+//--- index.js <-- index.js
+//--- product.js <-- product.js
+//--- Landing.js <-- Landing.js
+//--- Layout.js
+import BusyIndicator from 'react-busy-indicator@1.0.0'
+import React from 'react'
+import { Link, NotFoundBoundary, useLoadingRoute } from 'react-navi'
+
+export default function Layout({ children }) {
+  // If there is a route that hasn't finished loading, it can be
+  // retrieved with `useLoadingRoute()`.
+  let loadingRoute = useLoadingRoute()
+
+  return (
+    <div className="Layout">
+      {/* This component shows a loading indicator after a delay */}
+      <BusyIndicator isBusy={!!loadingRoute} delayMs={200} />
+      <header className="Layout-header">
+        <h1 className="Layout-title">
+        <Link href='/'>
+          Hats 'n' Flamethrowers 'r' Us
+        </Link>
+        </h1>
+      </header>
+      <main>
+        <NotFoundBoundary render={renderNotFound}>
+          {children}
+        </NotFoundBoundary>
+      </main>
+    </div>
+  )
+}
+
+function renderNotFound() {
+  return (
+    <div className='Layout-error'>
+      <h1>404 - Not Found</h1>
+    </div>
+  )
+}
+//--- api.js <-- api.js
+//--- styles.css <-- styles.css
+```
+
+## But that's not all!
+
+Ok, so I think we're about out of time for this blog post. But there's a bunch more details in the docs:
+
+- [Using URL Parameters](/navi/en/guides/url-parameters/)
+- [Requests, Routes and Matchers](/navi/en/guides/requests-routes-matchers/)
+- [Nested Routes and Views](/navi/en/guides/nested-views/)
+- [Programmatic navigation](/navi/en/guides/programmatic-navigation/)
+- [Guarding routes with authentication](/navi/en/guides/authenticated-routes/)
+- [Improving SEO with static rendering](/navi/en/guides/static-rendering/)
+- [Using Navi with react-router](/navi/en/integrations/react-router/)
+- [Using Navi with react-helmet](/navi/en/integrations/react-helmet/)
+- [Get a head start with a create-react-app based starter](/navi/en/create-react-navi-app/)
+
+You can also check out the [examples](https://github.com/frontarm/navi/tree/master/examples) directory of the Navi repository for full code examples, including:
+
+- [A basic site with create-react-app](https://github.com/frontarm/navi/tree/master/examples/basic)
+- [A simple site with static rendering](https://github.com/frontarm/navi/tree/master/examples/basic-static-rendering)
+- [A blog with tags, pagination and RSS](https://github.com/frontarm/navi/tree/master/examples/blog)
+- [That same blog but written in TypeScript](https://github.com/frontarm/navi/tree/master/examples/blog-typescript)
+
+Oh, and did I mention that Navi is build with TypeScript, so the typings are first-class?
+
+## Help me, Obi-Wan Kenobi. You're my only hope.
+
+Ok, so even if you're not Obi-Wan Kenobi, Navi needs *you*. Every little bit of help... helps.
+
+Actually, a lot of little things are way more helpful than they first appear. Can you try Navi out and file an issue for any missing features? *Awesome.* Can you make tiny improvements to the docs as you learn? *Radical.* Can you put something small online and add it to the [README](https://github.com/frontarm/navi#whos-using-navi)'s list of sites using Navi? *Phenomenal.*
+
+With that said, there are a few big ticket items that I'd love some help with:
+
+-   Navi needs some dev tools. Internally, all data is represented as simple objects called [Chunks](/navi/en/reference/data-types/#chunk) -- which are then reduced into `Route` objects with a Redux-like reducer. As a result of this design, it should be possible for dev tools to provide a useful window into what's going on, along with time-travel capability -- but I want to leave this task for the community. So if *you* want to be the person who made Navi's dev tools, let's [discuss the details](https://github.com/frontarm/navi/issues/52) 🤓
+
+-   Matcher functions like `mount()`, `lazy()` and `route()` are just Generator Functions. In fact, it's entirely possible to create [custom matchers](http://localhost:4000/navi/en/reference/matchers/#custom-matchers). For instance, you could create a `withTimeout()` matcher that switches routes based on how long they take to load. And if you *do* create useful custom matchers, send a tweet or DM to [@james_k_nelson](https://twitter.com/i/notifications) so I can spread the word 🤩
+
+-   If you can provide a translation for even a single page from the docs, I'll be forever grateful ❤️
+
+-   If you'd like to see this project grow, please give it a [🌟 on Github](https://github.com/frontarm/navi)!
+
+## One more thing...
+
+Navi now has experimental server rendering support. Matchers like `route()` and `mount()` have access to an entire `Request` object, including `method`, `headers`, and `body`. Your routes aren't limited to matching just a `view` and `data` -- they can also match a HTTP `status` and `headers`.
+
+**You can now handle routing on the client, the server and in serverless functions with *exactly* the same code.**
+
+Of course, you could already do some of this with [Next.js](https://nextjs.org/) -- but if all you need is a router, then Navi is a *lot* smaller (and more flexible). If you'd like to know more about the difference, take a read through [Navi vs. Next.js](/navi/en/comparisons/#navi-vs-nextjs). Or if you just want the server rendering demo: 
+
+```jsx
+//---
+rightPanel: console
+//--- index.js
+import { createMemoryNavigation, mount, route, lazy } from 'navi'
+import React, { Suspense } from 'react'
+import ReactDOMServer from 'react-dom/server'
+import { NaviProvider, View } from 'react-navi'
+import api from './api'
+import Landing from './Landing'
+import Layout from './Layout'
+
+async function main() {
+  const routes =
+    mount({
+      '/': route({
+        title: "Hats 'n' Flamethrowers 'r' Us",
+        getData: (request) => {
+          console.log('headers', request.headers)
+          return api.fetchProducts()
+        },
+        view: <Landing />,
+        status: 200,
+      }),
+      '/product': lazy(() => import('./product')),
+    })
+
+  // Creates a "navigation" object, which contains the same functionality
+  // as the browser `<Router>` object, but handled in-memory.
+  const navigation = createMemoryNavigation({
+    routes,
+    request: {
+      headers: {
+        'authorization-token': '123',
+      },
+      url: window.location.pathname
+    }
+  })
+
+  // Wait for the navigation object to stabilise, so it can be rendered
+  // immediately.
+  await navigation.steady()
+
+  console.log('status', navigation.getCurrentValue().status)
+
+  // As `renderToString()` doesn't support `<Suspense>`, instead of using
+  // a `<Router>` with a `<Suspense>`, you'll need to manually pass your
+  // navigation object to a `<NaviProvider>` component.
+  let html = ReactDOMServer.renderToString(
+    <NaviProvider navigation={navigation}>
+      <Layout>
+        <View />
+      </Layout>
+    </NaviProvider>
+  )
+
+  document.body.innerHTML = html
+}
+
+main()
+//--- product.js <-- product.js
+//--- Landing.js <-- Landing.js
+//--- Layout.js <-- Layout.js
+//--- api.js <-- api.js
+//--- styles.css <-- styles.css
+```
+
+As of right now, there's no official package for integrating Navi with Express. There should be one. Please make one. I'll tell the world about it.
+
+But seriously, I *will* tell the world about anything you make with Navi. Here's how I'll do it: the Frontend Armory weekly newsletter. Want to hear about awesome React shit that other readers are making? Join it. You know you want to.
+
+**[Join Frontend Armory for Free &raquo;](/members/register/)**
+
+But that's it from me today. Thanks *so* much for reading. I've poured my heart into this project because I believe that it'll make *your* life as a React developer so much easier. Now go build something amazing!
+
+*P.S. I haven't forgotten about the React in Practice course -- I'm working on it right now, and it'll include hooks. I'll have more more details real soon.*
+
+## Related Links
+
+- [Navi's Documentation](/navi/)
+- [Navi on GitHub](https://github.com/frontarm/navi)
+- [Follow @james_k_nelson on Twitter](https://twitter.com/james_k_nelson)

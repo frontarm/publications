@@ -12,7 +12,7 @@ export default createDocumentPage({
   headerImageURL: require('./header-image.png'),
   // socialImageURL: require('./social.png'),
 
-  metaDescription: `You know "try" and "catch", but how well do you know "finally"? Find out with 4 live examples.`,
+  metaDescription: `You know try and catch, but how well do you know finally? Find out with 4 live examples.`,
   
   importMDX: () => import('./document.mdx'),
 })

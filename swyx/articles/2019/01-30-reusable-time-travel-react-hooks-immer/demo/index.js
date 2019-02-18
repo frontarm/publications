@@ -1,5 +1,5 @@
-import React from 'react@next'
-import ReactDOM from 'react-dom@next'
+import React from 'react'
+import ReactDOM from 'react-dom'
 import App from './App'
 // export default function App() {
 //   let [count, setCount] = React.useState(1)

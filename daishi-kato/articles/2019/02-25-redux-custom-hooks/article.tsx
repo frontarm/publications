@@ -10,7 +10,7 @@ export default createDocumentPage({
     </p>
   ),
 
-  metaDescription: "TODO",
+  metaDescription: "Create a simple React/Redux integration with Hooks, then improve its performance with Proxies.",
 
   // socialImageURL: require('./social-media-card.png'),
   // socialTitle: "",

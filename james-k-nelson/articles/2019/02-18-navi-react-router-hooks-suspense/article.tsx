@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { Link } from 'react-navi'
 import { createDocumentPage } from 'shared/pages/createDocumentPage'
 
 export default createDocumentPage({
@@ -6,14 +7,15 @@ export default createDocumentPage({
   tags: ['react', 'navi', 'hooks', 'suspense'],
   blurb:
     <p>
-      Navi is a new kind of router for React, that lets you declaratively map URLs to (possibly asynchronous) content.
+      <Link href="/navi/">Navi</Link> is a new kind of router for React. It lets you declaratively map URLs to content, even when that content is asynchronous.
     </p>,
 
-  // headerImageURL: require('./header-image.png'),
-  // socialImageURL: require('./social.png'),
+  headerImageURL: require('./logo.svg'),
+  socialImageURL: require('./social.png'),
 
   pageTitle: "A React Router with Hooks and Suspense",
-  metaDescription: `Don't let the hype around hooks fool you - useContext() is actually incredibly useful.`,
+  socialTitle: "A React Router with Hooks and Suspense",
+  metaDescription: `Navi is a new kind of router for React, that lets you declaratively map URLs to (possibly asynchronous) content.`,
   
   importMDX: () => import('./document.mdx'),
 })

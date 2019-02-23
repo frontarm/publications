@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css?family=Inconsolata|Lato:300,700');
+
+body {
+  color: rgba(0, 10, 20, 0.93);
+  font-family: Lato, sans-serif;
+  font-size: 13px;
+  margin: 20px 30px;
+}
+
+td {
+  border-bottom: 1px #e0e0e0 solid;
+  padding: 2px;
+  text-align: right;
+}
+td:first-child {
+  font-family: Inconsolata, monospace;
+  text-align: left;
+}
+
+th {
+  border-bottom: 1px solid #aaa;
+  color: #000000;
+  font-weight: bold;
+}
+
+tr {
+  transition: background-color 3000ms ease-out, color 3000ms ease-out;
+}
+.up, .down {
+  transition: backgound-color 150ms ease-out, color 150ms ease-out !important;
+}
+.up {
+  background-color: rgba(22, 255, 22, 0.15);
+  color: green;
+}
+.down {
+  background-color: rgba(255, 22, 22, 0.15);
+  color: #aa0000;
+}

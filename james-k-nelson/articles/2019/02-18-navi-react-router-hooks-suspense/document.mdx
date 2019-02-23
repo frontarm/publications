@@ -12,9 +12,9 @@ export const demoboardHelpers = {
 
 So the React team just released a new API called *Hooks*. It's amazing. It lets you declaratively model state and side effects. You've probably read about it elsewhere on the internet, so I'm not going to tell you about hooks themselves, but...
 
-With a completely new API comes completely new possibilities. And to cut to the chase, Navi's new `<Router />` component uses Hooks and Suspense and its gonna blow your mind 🤯. It lets you do things like visualize transitions between pages with an animated loading bar... in 3 lines of code. And the `navi-scripts` tool lets you statically render create-react-app based projects, *without ejecting from create-react-app*.
+With a new API comes new possibilities. And to cut to the chase, Navi's new `<Router>` component uses Hooks and Suspense to make routing simpler than ever before. It makes all sorts of things possible -- you can even add animated loading transitions in *just 3 lines of code*.
 
-Amazing, right? But before we break out the hooks, *what the hell is a Navi `<Router />`?*
+So how do you use these new superpowered hooks? We'll get to that in a moment. But before we do, *what the hell is a `<Router>`?*
 
 <Doc.Details aside title="TL;DR?">
 
@@ -26,27 +26,39 @@ Asynchronous routing has never been this simple.
 </Doc.Details>
 </Doc.AsideTop>
 
-## How many routes could a `<Router routes />` route...
+## How many routes could a<br /> `<Router routes />` route...
 
-It could route **over 9000** routes. In fact, it could route even more, because it lets you dynamically `import()` entire routing trees on demand. But how?
+<Doc.AsideTop>
 
-The trick is in how you declare routes. It's simple -- you get a bunch of functions like `lazy()`, `mount()` and `route()`, and you just mash them together to map URLs to (possibly asynchronous) content.
+It can route as many as you'd like, because Navi lets you dynamically `import()` entire routing trees on demand. But *how*?
+
+<Doc.Details aside>
+
+It could route **over 9000** routes...
+
+</Doc.Details>
+</Doc.AsideTop>
+
+The trick is in Navi's method for declaring routes. For simple routes, you can just use Navi's `mount()` and `route()` functions. But for heavier content, you can declare dependencies on asynchronous data and views using `async`/`await` -- or you can even split out entire routing trees using `lazy()`.
 
 ```jsx{2,3,8}
-const routes =
+<Router routes={
   mount({
     '/': route({
       title: 'My Shop',
       getData: () => api.fetchProducts(),
-      view: <ShopLandingPage />,
+      view: <Landing />,
     }),
     '/products': lazy(() => import('./productsRoutes')),
   })
-
-<Router routes={routes} />
+} />
 ```
 
-Ok, so you've got a `<Router>` with a couple routes, including a shop's landing page and a lazily loadable `/products` URL. Next step: you need to decide where to render the current route's `view` element. And to do that, you just plonk down a `<View />` somewhere inside your `<Router>`.
+If you take a look at this example, you'll see that you've got yourself a `<Router>` with a couple routes, including a shop's landing page and a lazily loadable `/products` URL.
+
+*Let's build the rest of the shop.*
+  
+For your next step, you'll need to decide *where* to render the current route's `view` element. And to do that, you just plonk down a `<View />` element somewhere inside your `<Router>`.
 
 ```jsx{4}
 ReactDOM.render(
@@ -83,7 +95,7 @@ It is! But react-native apps would be far better served by [react-native-navigat
 
 ## Bro, just give me the hooks?
 
-Ok, so you've seen how to render a route's view. But your route also defined a `getData()` function.
+Ok, so you've seen how to render a route's view. But did you notice that your route also defines a `getData()` function?
 
 ```jsx
 route({
@@ -159,7 +171,7 @@ What you'd *really* like to do is to display a loading bar over the current page
   style={{ border: '1px solid #f0f0f0', borderRadius: '1rem' }}
 />
 
-There's just one problem. Doing this with currently available tools is ridiculously hard, right? Well actually... You can add it to the above demo in just 3 lines of code, using the `useLoadingRoute()` hook and the `react-loading-indicator` package.
+There's just one problem. Doing this with currently available tools is ridiculously hard, right? Well actually... You can add it to the above demo in just 3 lines of code, using the `useLoadingRoute()` hook and the `react-busy-indicator` package.
 
 ```js
 //---
@@ -205,7 +217,7 @@ function delay(ms) {
 //--- styles.css <-- styles.css
 ```
 
-Go ahead and try clicking between these pages a few times. Did you notice how smooth the transition is? No? It was so smooth that you didn't notice anything particularly special? Great! *That's exactly the experience that your users want.*
+Go ahead and try clicking between these pages a few times. Did you notice how smooth the transition back to the index page is? No? It was so smooth that you didn't notice that there's actually a 100ms delay? Great! *That's exactly the experience that your users want.*
 
 Here's how it works: `useCurrentRoute()` returns the most recent *completely loaded* route. And `useLoadingRoute()` returns any requested-but-not-yet-completely-loaded route. Or if the user *hasn't* just clicked a link, it returns `undefined`. 
 
@@ -226,7 +238,7 @@ Similarly, if `<View />` finds that `getView()` or `getData()` have thrown an er
 ```jsx
 //---
 editorPathname: /Layout.js
-viewerURL: /product/flamethrower
+viewerURL: /product/not-a-flamethrower
 //--- index.js <-- index.js
 //--- product.js <-- product.js
 //--- Landing.js <-- Landing.js
@@ -296,9 +308,9 @@ Oh, and did I mention that Navi is build with TypeScript, so the typings are fir
 
 ## Help me, Obi-Wan Kenobi. You're my only hope.
 
-Ok, so even if you're not Obi-Wan Kenobi, Navi needs *you*. Every little bit of help... helps.
+Ok, so even if you're not Obi-Wan Kenobi, I'd really appreciate your help.
 
-Actually, a lot of little things are way more helpful than they first appear. Can you try Navi out and file an issue for any missing features? *Awesome.* Can you make tiny improvements to the docs as you learn? *Radical.* Can you put something small online and add it to the [README](https://github.com/frontarm/navi#whos-using-navi)'s list of sites using Navi? *Phenomenal.*
+Actually, a lot of little things are way more helpful than they might seem. Can you try Navi out and file an issue for any missing features? *Awesome.* Can you make tiny improvements to the docs as you learn? *Radical.* Can you put something small online and add it to the [README](https://github.com/frontarm/navi#whos-using-navi)'s list of sites using Navi? *Phenomenal.*
 
 With that said, there are a few big ticket items that I'd love some help with:
 
@@ -308,7 +320,7 @@ With that said, there are a few big ticket items that I'd love some help with:
 
 -   If you can provide a translation for even a single page from the docs, I'll be forever grateful ❤️
 
--   If you'd like to see this project grow, please give it a [🌟 on Github](https://github.com/frontarm/navi)!
+-   If you'd like to see this project grow, please give it a [🌟Star on Github](https://github.com/frontarm/navi)!
 
 ## One more thing...
 

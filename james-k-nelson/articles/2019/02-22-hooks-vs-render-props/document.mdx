@@ -1,0 +1,260 @@
+import { Doc } from '@frontarm/doc'
+export const demoboardHelpers = {
+  'index.js': require('!raw-loader!./demo/index.js'),
+  'hooks.js': require('!raw-loader!./demo/hooks.js'),
+  'controllers.js': require('!raw-loader!./demo/controllers.js'),
+  'styles.css': require('!raw-loader!./demo/styles.css'),
+  'styled.js': require('!raw-loader!./demo/styled.js'),
+}
+
+If you've been following the news about React lately, then you've probably heard about hooks. There's been a *lot* of excitement about what you can build with them, and rightly so. Just take a look at all the interesting recipes on [Gabe Ragland's list](https://usehooks.com/).
+
+So hooks are great. But what if I told you that everything on that list can be built *without* hooks? Would it still be worth learning them?
+
+
+## Hooks are like Render Props
+
+If you've played with hooks, then you've probably discovered that they're [great for consuming context](/james-k-nelson/usecontext-react-hook/). To do so, you just use the `useContext()` hook:
+
+```jsx{4}
+let IsStatic = React.createContext()
+
+function HideDuringStaticRendering({ children }) {
+  let isStatic = React.useContext(IsStatic)
+  return isStatic ? null : children
+}
+```
+
+Of course, it's also possible to consume context using [render props](https://reactjs.org/docs/render-props.html):
+
+```jsx{3-5}
+function HideDuringStaticRendering({ children }) {
+  return (
+    <IsStatic.Consumer>
+      {isStatic => isStatic ? null : children}
+    </IsStatic.Consumer>
+  )
+}
+```
+
+As it happens, it's actually possible to implement almost *any* hook as a component that takes a render prop. But is the converse true? **Can hooks replace render props?**
+
+Have a little think about this, then click below to see my answer.
+
+<Doc.Spoiler>
+
+Hooks can replace *some* render props, but not *all* of them.
+
+Hooks can't render anything, they can't set values on context (even though they can consume values), and they can't implement error boundaries. Given these limitations, you may still find yourself using render props from time to time.
+
+</Doc.Spoiler>
+
+
+## Why Hooks?
+
+If render props are more flexible than hooks, and have been around for all this time, then why are people so suddenly excited about hooks?
+
+To answer this, let's do something a little odd, and reimplement a *hooks*-based demo with *render props*.
+
+Here's the demo. It's pretty simple; it just renders some randomly updating data, and performs a row highlight animation after each update -- using hooks.
+
+```jsx
+//--- TableRow.js
+import React, { useEffect } from 'react'
+import { useData, useDidChange, useLastValue, useTimedToggle } from './hooks'
+import { StyledTableRow } from './styled'
+
+function TableRow({ id }) {
+  let data = useData(id)
+  let last = useLastValue(data)
+  let didChange = useDidChange(data)
+  let [isHighlighted, highlight] = useTimedToggle(500)
+
+  useEffect(() => {
+    if (didChange) {
+      highlight()
+    }
+  })
+  
+  let change = last && (last.price > data.price ? 'down' : 'up')
+  
+  return (
+    <StyledTableRow
+      data={data}
+      change={isHighlighted && change}
+    />
+  )
+}
+
+export default TableRow
+//--- hooks.js <-- hooks.js
+//--- styled.js <-- styled.js
+//--- styles.css <-- styles.css
+//--- index.js <-- index.js
+```
+
+So how would you implement this demo *without* hooks? To start, you could reimplement the `useData` and `useTimedToggle` hooks as components that accept a render prop, passing their values out as children -- just as React's context consumer component works.
+
+```jsx
+function TableRow({ id }) {
+  return (
+    <Data id={id} children={data =>
+      <TimedToggle
+        milliseconds={500}
+        children={([isHighlighted, highlight]) =>
+          "..."
+        }
+      />
+    } />
+  )
+}
+```
+
+As for the `useDidChange()`, `useLastValue()` and `useEffect()`, how would you implement those? Why not give it a try yourself as an exercise!
+
+**Your task is to complete the row highlight animation using render props, so that the below example behaves identically to the above example.**
+
+I've provided you with `Data` and `TimedToggle` components, you just need to finish off the highlight-on-change functionality. If you get stuck, you can check your answer by clicking on the "solution" button at the bottom of the editor. But please do make sure to give it a go before continuing!
+
+```jsx
+//---
+maximizeLeftPanel: true
+//--- TableRow.js
+import React from 'react'
+import { Data, TimedToggle } from './controllers'
+import { StyledTableRow } from './styled'
+
+function TableRow({ id }) {
+  return (
+    <Data id={id} children={data =>
+      <TimedToggle
+        milliseconds={500}
+        children={([isHighlighted, highlight]) =>
+          <StyledTableRow isHighlighted={isHighlighted} data={data} />
+        }
+      />
+    } />
+  )
+}
+
+export default TableRow
+//--- solution:TableRow.js
+import React from 'react'
+import { Data, TimedToggle } from './controllers'
+import { StyledTableRow } from './styled'
+
+function TableRow({ id }) {
+  return (
+    <Data id={id} children={data =>
+      <TimedToggle
+        milliseconds={500}
+        children={([isHighlighted, highlight]) =>
+          <InnerTableRow
+            data={data}
+            highlight={highlight}
+            isHighlighted={isHighlighted}
+          />
+        }
+      />
+    } />
+  )
+}
+
+class InnerTableRow extends React.Component {
+  state = {
+    lastChange: null,
+  }
+
+  render() {
+    return (
+      <StyledTableRow
+        data={this.props.data}
+        change={this.props.isHighlighted && this.state.lastChange}
+      />
+    )
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.data && prevProps.data !== this.props.data) {
+      this.props.highlight()
+      this.setState({
+        lastChange:
+          prevProps.data.price > this.props.data.price
+            ? 'down'
+            : 'up'
+      })
+    }
+  }
+}
+
+export default TableRow
+//--- controllers.js <-- controllers.js
+//--- styled.js <-- styled.js
+//--- styles.css <-- styles.css
+//--- index.js <-- index.js
+```
+
+How'd you go?
+
+Depending on your experience with React, this exercise may be quite easy, or may feel impossible. In fact, there are a couple ways that you could answer it. But whatever approach you take, it's going to be a pain-in-the-arse.
+
+**The problem with the above exercise is that you need to react to changes to a value passed via render prop.**
+
+In non-hooks React, reacting to changes is usually accomplished by use of the `componentDidUpdate()` lifecycle method. But `componentDidUpdate()` only knows about props and state. It doesn't know about any values received via render prop. And so typically, if you need to watch a render function's arguments, you'd pass them to a nested component and watch them there.
+
+```jsx{8,33}
+function TableRow({ id }) {
+  return (
+    <Data id={id} children={data =>
+      <TimedToggle
+        milliseconds={500}
+        children={([isHighlighted, highlight]) =>
+          <InnerTableRow
+            data={data}
+            highlight={highlight}
+            isHighlighted={isHighlighted}
+          />
+        }
+      />
+    } />
+  )
+}
+
+class InnerTableRow extends React.Component {
+  state = {
+    lastChange: null,
+  }
+
+  render() {
+    return (
+      <StyledTableRow
+        data={this.props.data}
+        change={this.props.isHighlighted && this.state.lastChange}
+      />
+    )
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.data && prevProps.data !== this.props.data) {
+      this.props.highlight()
+      this.setState({
+        lastChange:
+          prevProps.data.price > this.props.data.price
+            ? 'down'
+            : 'up'
+      })
+    }
+  }
+}
+```
+
+Creating a separate component *works*, but it is a verifiable pain-in-the-arse. *Hooks solve all that.*
+
+If I was to make a terrible analogy, I'd tell you that the transition from render props to hooks feels a lot like the transition from callbacks to promises. It lets you accomplish the same thing, but you can put more in a single function. **Hooks flatten things out.**
+
+So here's the thing. React components are composable -- with or without hooks. **But with hooks, composing state and reactions to that state becomes far, far simpler.** And that's why you're probably going to be using a darn lot of hooks in the not too distant future (if you're not already, that is!)
+
+If you need to learn more about hooks? Check out the [React
+Hooks documentation](https://reactjs.org/docs/hooks-intro.html). It's first class. Or if you'd prefer to learn with live examples and exercises like the ones above, then you may want to join my weekly newsletter to receive more articles like this -- just [login with GitHub or e-mail](/members/login/) to do so.
+
+That's it for me today. If you have any questions or comments, let me know on twitter at [@james_k_nelson](https://twitter.com/james_k_nelson) or via email at [james@frontarm.com](mailto:james@frontarm.com). But until next time, happy coding!

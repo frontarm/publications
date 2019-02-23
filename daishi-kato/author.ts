@@ -5,7 +5,7 @@ const author: Author = {
   name: 'Daishi Kato',
   shortName: 'Daishi',
   image: require('./daishi-kato.jpg'),
-  bio: `TODO`,
+  bio: `A freelance programmer. I'm interested in working remotely with people abroad.`,
 
   location: "Tokyo, Japan",
   twitter: "dai_shi",

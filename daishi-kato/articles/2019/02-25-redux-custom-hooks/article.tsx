@@ -2,11 +2,11 @@ import * as React from 'react'
 import { createDocumentPage } from 'shared/pages/createDocumentPage'
 
 export default createDocumentPage({
-  title: "Custom hooks for Redux, without react-redux",
+  title: "Integrating React and Redux, with Hooks and Proxies",
   tags: ['react', 'redux'],
   blurb: (
     <p>
-      TODO
+      Learn to create a simple React/Redux integration using Hooks, then improve the performance using JavaScript Proxies.
     </p>
   ),
 

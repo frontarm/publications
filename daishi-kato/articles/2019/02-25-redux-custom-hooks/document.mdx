@@ -254,16 +254,12 @@ const Person = () => {
 
 export default Person;
 //--- App.jsx
-import React from 'react';
+import React, { unstable_ConcurrentMode as ConcurrentMode }  from 'react';
 import { createStore } from 'redux';
 import { ReduxProvider } from 'react-hooks-easy-redux';
 import { reducer } from './state';
 import Counter from './Counter';
 import Person from './Person';
-
-const {
-  unstable_ConcurrentMode: ConcurrentMode,
-} = React;
 
 const store = createStore(reducer);
 

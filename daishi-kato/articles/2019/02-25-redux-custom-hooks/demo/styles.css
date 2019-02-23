@@ -1,0 +1,30 @@
+body {
+  background-color: #333344;
+  color: white;
+  font-family: monospace;
+  font-size: 20px;
+  text-align: center;
+}
+
+div {
+  margin: 30px; 
+}
+div > div > div {
+  margin: 0;
+}
+
+button, input {
+  background-color: transparent;
+  border: 1px solid #61dafb;
+  border-radius: 10px;
+  color: #61dafb;
+  font-size: 20px;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+input {
+  box-shadow:
+    2px 2px 4px inset rgba(0, 0, 0, 0.75),
+    2px 2px 4px rgba(0, 0, 0, 0.75);
+}

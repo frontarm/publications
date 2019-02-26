@@ -1,0 +1,62 @@
+@import '~@frontarm/doc/layout.scss';
+
+.Specs {
+  img {
+    max-width: 100% !important;
+  }
+  .number {
+    flex-basis: 4rem;
+    font-style: italic;
+    font-weight: bold;
+    margin-top: 0.33rem;
+    flex-shrink: 0;
+  }
+  .image {
+    flex-basis: 33%;
+    flex-shrink: 0;
+  }
+  pre {
+    font-size: 1.6rem;
+    line-height: 2.4rem;
+    margin-top: 0 !important;
+    flex-grow: 1;
+    flex-shrink: 1;
+    padding-left: 2rem;
+    white-space: pre-wrap;
+  }
+  ol {
+    padding: 0;
+  }
+  li {
+    list-style: none;
+  }
+  figure {
+    clear: both;
+    display: flex;
+    margin: 0;
+    max-width: 100%;
+  }
+
+  @include when-small-single-column {
+    figure {
+      flex-wrap: wrap;
+    }
+    .image {
+      flex-basis: 100%;
+      order: 0;
+    }
+    .number {
+      order: 1;
+      font-size: 1.6rem;
+      flex-basis: 1rem;
+      margin-top: -0.5rem;
+    }
+    figcaption {
+      order: 2;
+    }
+    pre {
+      padding-left: 1rem;
+      margin-bottom: 4rem;
+    }
+  }
+}

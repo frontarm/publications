@@ -1,0 +1,101 @@
+import { Doc } from '@frontarm/doc'
+export const demoboardHelpers = {
+  'App.jsx': require('!raw-loader!./demo/App.jsx'),
+  'BadCounter.jsx': require('!raw-loader!./demo/BadCounter.jsx'),
+  'GoodCounter.jsx': require('!raw-loader!./demo/GoodCounter.jsx'),
+  'index.js': require('!raw-loader!./demo/index.js'),
+}
+
+<Doc.AsideTop>
+
+According to the [React 16 Roadmap](https://reactjs.org/blog/2018/11/27/react-16-roadmap.html), Concurrent Mode is just over the horizon. Expected to arrive in Q2 2019, here's what Dan Abramov has to say about Concurrent Mode:
+
+> Concurrent Mode lets React apps be more responsive by rendering component trees without blocking the main thread. It is opt-in and allows React to interrupt a long-running render (for example, rendering a new feed story) to handle a high-priority event (for example, text input or hover). Concurrent Mode also improves the user experience of Suspense by skipping unnecessary loading states on fast connections.
+
+While Concurrent Mode is an opt-in feature, enabling it will be simple: just wrap part of your app with a `<ConcurrentMode>` element:
+
+```jsx
+<ConcurrentMode>
+  <Something />
+</ConcurrentMode>
+```
+
+<Doc.Details aside>
+
+ConcurrentMode is already available to try out under `<React.unstable_ConcurrentMode>`.
+
+</Doc.Details>
+</Doc.AsideTop>
+
+But be aware: if your app uses `useRef()` the wrong way, then Concurrent Mode won't work correctly. In fact, your *entire app* won't work correctly. So to help you prepare, this short article compares some bad code with a good version, and then discusses what you can do to prepare right now.
+
+
+## The bad code
+
+> Your render function should be side-effect free.
+
+So it has always been the case that your rendering your component shouldn't have any side effects, but it hadn't really been an issue until Concurrent Mode appeared on the scene. In Concurrent Mode, render functions can be invoked multiple times without actually committing (meaning, for example, applying changes to the DOM).
+
+For example, here's a simple counter that uses `useRef()`.
+
+<Doc.Details aside>
+
+This example is a little contrived -- in practice, you'd probably use `useState()` for a counter. But the example demonstrates the issue well.
+
+</Doc.Details>
+
+```jsx
+import React, { useRef } from "react";
+
+const BadCounter = () => {
+  const count = useRef(0);
+  count.current += 1;
+  return <div>count:{count.current}</div>;
+};
+
+export default BadCounter;
+```
+
+The above example works as expected in traditional React where the render phase and the commit phase is one-to-one. However, if React invokes the render function multiple time without committing, the counter will increase unexpectedly.
+
+## The good code
+
+<br />
+
+```jsx
+import React, { useEffect, useRef } from "react";
+
+const GoodCounter = () => {
+  const count = useRef(0);
+  let currentCount = count.current;
+  useEffect(() => {
+    count.current = currentCount;
+  });
+  currentCount += 1;
+  return <div>count:{currentCount}</div>;
+};
+
+export default GoodCounter;
+```
+
+This version uses `useEffect()`, whose argument function is only invoked in the commit phase. `currentCount` is a local variable within the render function scope, so it will only change the ref count in the commit phase. The ref  is essentially a global variable outside the function scope, hence modifying it is a side effect.
+
+## The demo
+
+```jsx
+//---
+lineCount: 16
+//--- BadCounter.jsx <-- BadCounter.jsx
+//--- GoodCounter.jsx <-- GoodCounter.jsx
+//--- App.jsx <-- App.jsx
+//--- index.js <-- index.js
+```
+
+## Preparing for the future
+
+The thing about the *bad* counter in the above example is that it works, *until* you put it into a `<ConcurrentMode>`. So how do you know if your code is *good*?
+
+This is where React's `<StrictMode>` component comes in. Strict Mode intentionally invokes render functions twice, letting you find incorrect behavior during development. And `<StrictMode>` is available right now. For more details, see to [the docs](https://reactjs.org/docs/strict-mode.html#detecting-unexpected-side-effects).
+
+Finally, let me tell you a little about why I wrote this article in the first place. The reason that I'm using `useRef()` is to develop a bindings library for Redux, called [react-hooks-easy-redux](https://github.com/dai-shi/react-hooks-easy-redux). The library must subscribe to the global store, and update the component state whenever the store's state is updated. Refs are used to keep track of the last rendered state -- I've made sure that they work with `<ConcurrentMode>`, and I'd like to share what I learned while doing so.
+  

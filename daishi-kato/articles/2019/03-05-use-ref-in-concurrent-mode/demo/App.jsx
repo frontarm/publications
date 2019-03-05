@@ -11,15 +11,17 @@ const useForceUpdate = () => useReducer(state => !state, false)[1];
 const App = () => {
   const forceUpdate = useForceUpdate();
   return (
-    <ConcurrentMode>
-      <div>
-        <button onClick={forceUpdate}>Update</button>
-        <h3>Bad Counter</h3>
+    <div>
+      <button onClick={forceUpdate}>Update</button>
+      <h3>Bad Counter (Normal)</h3>
+      <BadCounter />
+      <ConcurrentMode>
+        <h3>Bad Counter (Concurrent Mode)</h3>
         <BadCounter />
-        <h3>Good Counter</h3>
+        <h3>Good Counter (Concurrent Mode)</h3>
         <GoodCounter />
-      </div>
-    </ConcurrentMode>
+      </ConcurrentMode>
+    </div>
   );
 };
 

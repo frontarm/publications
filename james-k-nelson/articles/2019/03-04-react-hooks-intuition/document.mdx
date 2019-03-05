@@ -1,0 +1,222 @@
+import { Doc } from '@frontarm/doc'
+export const demoboardHelpers = {
+  'index.js': require('!raw-loader!./demo/index.js'),
+  'hooks.js': require('!raw-loader!./demo/hooks.js'),
+  'styles.css': require('!raw-loader!./demo/styles.css'),
+}
+
+It’s been almost a month since React Hooks were released, and they already seem to be taking over the world -- thanks in no small part to the power of custom hooks.
+
+Custom hooks do for state and side effects what React components did for views; they make it insanely easy to share and reuse small pieces of code. As a result, all sorts of packages now export custom hooks -- [my own package](/navi/en/reference/react-components-hooks/#usecurrentroute) included. *But there’s a catch.*
+
+Let's investigate the catch by diving into an example, before building some intuition around when to use hooks -- and when to use something else.
+
+
+## Have you ever used an app with no lists?
+
+Imagine that you’re building an app with a contact form. To start out, you may decide to store the form's state within the Form component itself, using the `useState()` hook.
+
+```js
+let [name, setName] = useState(defaultValue.name || '')
+let [email, setEmail] = useState(defaultValue.email || '')
+```
+
+To ensure reusability, you put this state management code into a `useContactModel()` custom hook, that can be used whenever a contact form is required within your app.
+
+```js
+function useContactModel({ defaultValue }) {
+  let [name, setName] = useState(defaultValue.name || '')
+  let [email, setEmail] = useState(defaultValue.email || '')
+
+  return {
+    error: name === '' ? 'Please enter a name' : undefined,
+
+    // Contains objects that can be spread onto <input> elements
+    inputProps: {
+      name: {
+        value: name,
+        onChange: e => setName(e.target.value),
+      },
+      email: {
+        value: email,
+        onChange: e => setEmail(e.target.value),
+      },
+    }
+  }
+}
+```
+
+Simple, huh? Hooks make this kind of thing super-duper easy. But what if the customer then asks you why you only allow for entry of a *single* contact, as opposed to a *list* of contacts? No worries, `Contact` is a component. Turning it into a list is as simple as creating a `ContactList` component and rendering `Contact` a few times.
+
+```js
+//--- components.js
+import React from 'react'
+import { useContactModel, useKeys } from './hooks'
+
+export function Contact({ onRemove }) {
+  let model = useContactModel()
+
+  return (
+    <div>
+      <label>Name: <input {...model.inputProps.name} /></label>
+      <label>Email: <input {...model.inputProps.email} /></label>
+      <button onClick={onRemove}>Remove</button>
+      {model.error && <p>{model.error}</p>}
+    </div>
+  )
+}
+
+export function ContactList() {
+  let [keys, add, remove] = useKeys(3)
+
+  return (
+    <>
+      {keys.map(key =>
+        <Contact key={key} onRemove={() => remove(key)} />
+      )}
+      <button onClick={add}>Add</button>
+    </>
+  )
+}
+//--- hooks.js <-- hooks.js
+//--- index.js <-- index.js
+//--- styles.css <-- styles.css
+```
+
+So far, so good. There’s just one problem: you need to be able to *save* the contacts. And given that your API requires that you send the entire list at once, you’re going to need to have access to an array containing all that data.
+
+If the state is all stored in child components, then you can't just access the data from the parent. But no problem -- `useContactModel()` is a hook, so you can just lift the whole thing into the parent component, right?
+
+```js
+//---
+rightPanel: console
+//--- components.js
+import React from 'react'
+import { useContactModel, useKeys } from './hooks'
+
+export function Contact({ model, onRemove }) {
+  return (
+    <div>
+      <label>Name: <input {...model.inputProps.name} /></label>
+      <label>Email: <input {...model.inputProps.email} /></label>
+      <button onClick={onRemove}>Remove</button>
+      {model.error && <p>{model.error}</p>}
+    </div>
+  )
+}
+
+export function ContactList() {
+  let [keys, add, remove] = useKeys(3)
+  let contactModels = keys.map(useContactModel)
+
+  return (
+    <>
+      {keys.map((key, i) =>
+        <Contact
+          key={key}
+          model={contactModels[i]}
+          onRemove={() => remove(key)}
+        />
+      )}
+      <button onClick={add}>Add</button>
+    </>
+  )
+}
+//--- hooks.js <-- hooks.js
+//--- index.js <-- index.js
+//--- styles.css <-- styles.css
+```
+
+Waaait a minute... in the above example, `useContactModel()` is called from a loop. You can't see the loop, because it's happening inside of the call to `map()`. But I can assure you that there are looping shenanigans taking place.
+
+Now as you know, hooks aren't like normal functions. *You can't use them just anywhere in your code.* The above code shouldn’t work, and indeed it doesn't -- just try adding or removing a contact...
+
+
+## Hooks can’t (always) be lifted up
+
+At times, you can think of custom hooks as *components for state management*. But this mental model breaks down after a point: while components can be rendered within loops and conditions, hooks [can't](https://reactjs.org/docs/hooks-rules.html). And this has an important side effect:
+
+**Custom hooks can’t be lifted out of components that are rendered inside of conditions or loops.**
+
+Hooks aren't like reducers; you can't just compose them together into one big hook that holds the entire application's state. Instead, you'll need to call any `useState()` hooks closer to where the state is actually rendered -- and *this is by design:*
+
+<Doc.Tweet tweetId='1101691197997834240' />
+
+While hooks do let you reuse stateful and effectful code across components, they still **force you to associate that code with a component** -- and its associated position in the DOM. As a result, hooks come with many of the same constraints as class components:
+
+- **What if you need to call a hook within a loop?**
+
+  Then you'll need to put the hook in a child component and call it there.
+
+- **What if you then want to access the result of those hooks in the parent component?**
+
+  Then you'll need to lift the state back up into the parent component and refactor to avoid calling hooks in loops -- e.g. by replacing multiple `useState()` hooks with a single `useReducer()`.
+
+- **What if you then want that state to stick around after the component is unmounted?**
+
+  Then you'll need to lift the state up even further -- and probably refactor again.
+
+As you can see, custom hooks aren't really "components for state and side effects" -- they're too dependent on their context to be thought of as components. But if they're not components, *then what are they?*
+
+
+## Hooks are mixins
+
+Once upon a time, React had a feature called *mixins* that let you reuse small groups of lifecycle methods and state across multiple components. React's mixins had a [number of issues](https://reactjs.org/blog/2016/07/13/mixins-considered-harmful.html) which caused them to be deprecated, but the need for a way to share functionality between components is as a strong as ever. And that's what hooks are: a way to share stateful and side-effectful functionality between components.
+
+<Doc.Details aside>
+
+Another tool for thinking about hooks is to understand that a component can have a *tree* of child components, but it can only have a *list* of hooks or mixins.
+
+If you need a tree, then you don't want to build it out of hooks -- but you *may* want to build it out of components or reducers.
+
+</Doc.Details>
+
+Ryan Florence actually [made this connection](https://reactpodcast.com/31) before hooks were even announced. But personally speaking, it wasn't until I started running into the limitations of hooks that the connection really struck.
+
+Ok, so hooks are mixins. It's a fun connection to make -- but does this mean anything *in practice?* Actually, I've found this to be a good way to intuitively understand whether something ~~can~~ should be done with hooks:
+
+- **Should I try and create a Redux-like store that holds my entire app's state by mixing things into a component?** No? Then it doesn't make sense with hooks either.
+
+- **Should I try to create models that store state for a large form by mixing things into a component?** No? Then hooks probably aren't a great way to do this either.
+
+- **Would mixins be an appropriate way to make a component subscribe to a global store?** Yes? Then hooks will work for that too!
+
+And we're not done yet. There's one more thing that hooks-are-mixins means in practice, and it's a biggie...
+
+
+## Don't throw out your state manager.
+
+<Doc.AsideTop>
+
+While hooks are a great way to reuse stateful code across components, *they're still tied to components*. Sometimes you'll need state that *isn't* tied to a component -- things like:
+
+- A cache of data that has been received from the server (e.g. Apollo)
+- The status of any drag-and-drop interfactions (e.g. [react-dnd](https://github.com/react-dnd/react-dnd))
+- The current user's authentication state (e.g. using Firebase or Auth0)
+- Any async data that depends on the current URL (e.g. using [Navi](/navi/))
+
+While hooks are local, some state is global. And that means that state managers will always be your friend! With that said, **hooks and state managers aren't mutually exclusive.**
+
+<Doc.Details aside title="What about Suspense?">
+
+When [Concurrent Mode](https://reactjs.org/blog/2018/11/27/react-16-roadmap.html#react-16x-q2-2019-the-one-with-concurrent-mode) hits the street, it'll become even easier to subscribe to async data using Suspense -- but that data will still need to be cached somewhere.
+
+React will provide a *simple* [cache](https://www.npmjs.com/package/react-cache), but Apollo (and other tools for managing global state) will provide you with many more features.
+
+</Doc.Details>
+</Doc.AsideTop>
+
+In order to render any global state, you'll first need to subscribe to it and store it in component state -- and hooks are a great way to do this. For an example of how to do this, check out Daishi Kato's recent guide to [creating hooks to subscribe to a Redux store (with Proxies)](/daishi-kato/redux-custom-hooks/).
+
+So here's the thing: hooks are an incredible tool. I feel like they're the missing piece that React has needed since Mixins were deprecated. But like any tool, hooks don't suit every situation, and the key to getting the most out of them is to understand when to use them -- and when to use something else.
+
+
+*Thanks for reading all the way to the end! If you liked this article and want to read more like it, then now's a great time to join Frontend Armory's weekly newsletter. It's free to join -- just click → [here](/members/register/) ←.
+
+
+## More Reading
+
+- [When Context Replaces Redux](/james-k-nelson/when-context-replaces-redux/)
+- [Creating a react-redux alternative with Hooks and Proxies](/daishi-kato/redux-custom-hooks/)
+- [Reusable Time Travel with React Hooks and Immer](/swyx/reusable-time-travel-react-hooks-immer/)
+- [A `<Router />` with Hooks and Suspense](/james-k-nelson/navi-react-router-hooks-suspense/)

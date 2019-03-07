@@ -5,11 +5,21 @@ export const demoboardHelpers = {
   'styles.css': require('!raw-loader!./demo/styles.css'),
 }
 
+<Doc.AsideTop>
+
 It’s been almost a month since React Hooks were released, and they already seem to be taking over the world -- thanks in no small part to the power of custom hooks.
 
 Custom hooks do for state and side effects what React components did for views; they make it insanely easy to share and reuse small pieces of code. As a result, all sorts of packages now export custom hooks -- [my own package](/navi/en/reference/react-components-hooks/#usecurrentroute) included. *But there’s a catch.*
 
-Let's investigate the catch by diving into an example, before building some intuition around when to use hooks -- and when to use something else.
+Let's investigate the catch by diving into an example, before building some intuition around when to use custom hooks -- and when to use something else.
+
+<Doc.Aside>
+<blockquote style={{marginTop: 0, fontStyle: 'italic', fontSize: '120%'}}>
+This article is almost my exact experience!
+<cite style={{marginTop: '1rem', display: 'block', fontSize: '80%'}}>&ndash; <a href="https://twitter.com/_eliperkins">Eli Perkins</a></cite>
+</blockquote>
+</Doc.Aside>
+</Doc.AsideTop>
 
 
 ## Have you ever used an app with no lists?
@@ -144,6 +154,8 @@ Hooks aren't like reducers; you can't just compose them together into one big ho
 
 While hooks do let you reuse stateful and effectful code across components, they still **force you to associate that code with a component** -- and its associated position in the DOM. As a result, hooks come with many of the same constraints as class components:
 
+<Doc.AsideTop>
+
 - **What if you need to call a hook within a loop?**
 
   Then you'll need to put the hook in a child component and call it there.
@@ -158,6 +170,16 @@ While hooks do let you reuse stateful and effectful code across components, they
 
 As you can see, custom hooks aren't really "components for state and side effects" -- they're too dependent on their context to be thought of as components. But if they're not components, *then what are they?*
 
+<Doc.Details aside title="Multiple useStates, or a useReducer?">
+
+Dan Abramov [tweeted](https://twitter.com/dan_abramov/status/1083330668522864640) a simple answer:
+
+> For independent things (isHovering and textInput), multiple useState.
+>
+> For things that change together (isFetching and fetchedItems), or if their next state depends on previous (todos), I prefer useReducer.
+
+</Doc.Details>
+</Doc.AsideTop>
 
 ## Hooks are mixins
 
@@ -211,7 +233,7 @@ In order to render any global state, you'll first need to subscribe to it and st
 So here's the thing: hooks are an incredible tool. I feel like they're the missing piece that React has needed since Mixins were deprecated. But like any tool, hooks don't suit every situation, and the key to getting the most out of them is to understand when to use them -- and when to use something else.
 
 
-*Thanks for reading all the way to the end! If you liked this article and want to read more like it, then now's a great time to join Frontend Armory's weekly newsletter. It's free to join -- just click → [here](/members/register/) ←.
+*Thanks for reading all the way to the end! If you liked this article and want to read more like it, then now's a great time to join Frontend Armory's weekly newsletter. It's free to join -- just click → [here](/members/register/) ←.*
 
 
 ## More Reading

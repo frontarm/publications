@@ -2,7 +2,7 @@ import * as React from 'react'
 import { createDocumentPage } from 'shared/pages/createDocumentPage'
 
 export default createDocumentPage({
-  title: "How not to shoot yourself in the foot with useRef() and Concurrent Mode",
+  title: "useRef() and Concurrent Mode: how to avoid shooting yourself in the foot",
   tags: ['react'],
   blurb: (
     <p>

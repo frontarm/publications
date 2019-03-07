@@ -10,6 +10,7 @@ const author: Author = {
   location: "Tokyo, Japan",
   twitter: "dai_shi",
   github: "dai-shi",
+  website: 'https://contact.axlight.com',
 
   // You can add this if you'd like this
   // email: "",

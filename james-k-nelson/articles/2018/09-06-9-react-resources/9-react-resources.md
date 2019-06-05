@@ -1,5 +1,7 @@
 import { Housekeeping, Spoiler, Important, Caution, Reference, Story, Details, Aside, Tweet } from 'shared/documentHelpers'
 
+*This article has been translated into [Russian](http://softdroid.net/9-rukovodstv-po-react-kotorye-vyderzhali-ispytanie-vremenem).*
+
 The React world can feel like a bit of a treadmill at times. With so many new packages, APIs and patterns... actually, scratch that. Things are more stable than you'd think, and I have the data to prove it! But before we dive in, first let me make an introduction.
 
 If you don't know of [Mark Erikson](https://twitter.com/acemarke?lang=en), he's one of the backbones of the React community. He pours hours into maintaining Redux, tirelessly answers questions from the community, and also maintains the [most comprehensive list](https://github.com/markerikson/react-redux-links) of React/Redux links on the information superhighway.

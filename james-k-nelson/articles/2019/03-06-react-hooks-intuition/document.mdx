@@ -2,7 +2,6 @@ import { Doc } from '@frontarm/doc'
 export const demoboardHelpers = {
   'index.js': require('!raw-loader!./demo/index.js'),
   'hooks.js': require('!raw-loader!./demo/hooks.js'),
-  'styles.css': require('!raw-loader!./demo/styles.css'),
 }
 
 <Doc.AsideTop>
@@ -90,7 +89,6 @@ export function ContactList() {
 }
 //--- hooks.js <-- hooks.js
 //--- index.js <-- index.js
-//--- styles.css <-- styles.css
 ```
 
 So far, so good. There’s just one problem: you need to be able to *save* the contacts. And given that your API requires that you send the entire list at once, you’re going to need to have access to an array containing all that data.
@@ -134,7 +132,6 @@ export function ContactList() {
 }
 //--- hooks.js <-- hooks.js
 //--- index.js <-- index.js
-//--- styles.css <-- styles.css
 ```
 
 Waaait a minute... in the above example, `useContactModel()` is called from a loop. You can't see the loop, because it's happening inside of the call to `map()`. But I can assure you that there are looping shenanigans taking place.

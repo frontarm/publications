@@ -126,5 +126,14 @@ class Tooltip extends React.Component {
 
 So to summarize: props are just objects, so you can easily compute default values with plain JavaScript. And that's really all there is to it.
 
-Thanks so much for reading! And if you've found this helpful, take a look at my [React (without the buzzwords) course](/courses/learn-raw-react/). It's packed full of live exampes and exercises, and will help deepen your understanding of React's fundamentals, including elements, function components, class components and events.
+Thanks so much for reading! If you've found this helpful, take a look at my [React fundamentals course](/courses/react-fundamentals/). It's packed full of live examples and exercises, and will help deepen your understanding of React's fundamentals, including:
+
+- elements
+- function components
+- events
+- hooks
+- class components
+- *and more*
+
+You can try out the [first lessons and exercises](/courses/react-fundamentals/basics/one-file-react-app/) for free -- see you there!
 

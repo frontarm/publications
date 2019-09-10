@@ -1,7 +1,7 @@
 import { Housekeeping, Spoiler, Important, InlineSubscribe, Caution, Reference, Story, Details } from 'shared/documentHelpers'
 export { breadboardHelpers } from './breadboardHelpers'
 
-This cheatsheet contains live examples of a number of common React events. You can learn more about events in the [Event handlers](/courses/learn-raw-react/state-and-events/event-handlers) lesson of [Learn Raw React](/courses/learn-raw-react/).
+This cheatsheet contains live examples of a number of common React events. You can learn more about events in the [Event handlers](/courses/react-fundamentals/events-state-effects/event-handlers/) lesson of my [React fundamentals course](/courses/react-fundamentals/).
 
 ## Keyboard
 

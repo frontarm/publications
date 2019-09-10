@@ -143,7 +143,7 @@ let elementWithClassName =
 console.log("new className", elementWithClassName.props.className)
 ```
 
-If you're comfortable with React's [createElement()](/courses/learn-raw-react/basics/elements-are-objects/) function, then `cloneElement()` will feel familiar -- the only difference is that it accepts an element in place of a `type`. Of course, given that you won't use `cloneElement()` all that often, you might want some help remembering it. And that's what my [printable React cheatsheet](/toolbox/react-cheatsheets/) is for -- its a free download! But I digress. So let's move on to an example.
+If you're comfortable with React's [createElement()](/courses/react-fundamentals/basics/elements-are-objects/) function, then `cloneElement()` will feel familiar -- the only difference is that it accepts an element in place of a `type`. Of course, given that you won't use `cloneElement()` all that often, you might want some help remembering it. And that's what my [printable React cheatsheet](/toolbox/react-cheatsheets/) is for -- its a free download! But I digress. So let's move on to an example.
 
 <NavLink href="/toolbox/pdf-cheatsheets/">
   <img alt="Printable React cheatsheet" src={require("./react-cheatsheet-thumbnail.png")} />
@@ -343,7 +343,7 @@ ReactDOM.render(
 ///helper:styles.css
 ```
 
-How'd you go? If you got stuck on this exercise, head on over to my [React (without the buzzwords) course](/courses/learn-raw-react/). It'll leave you as a master of React's element objects, and you can get started immediately!
+How'd you go? If you got stuck on this exercise, head on over to my [React fundamentals course](/courses/react-fundamentals/). It'll leave you as a master of React's element objects, and you can get started immediately!
 
 
 Which approach should I take?
@@ -364,3 +364,17 @@ Of course, there are still situations in which cloning makes sense:
 So which should you use?
 
 **My recommendation is to use render props where possible.** But you don't have to avoid `cloneElement()` completely -- its still a useful and effective tool when used in moderation.
+
+---
+
+Thanks so much for reading! If you've found this helpful, take a look at my complete [React fundamentals course](/courses/react-fundamentals/). It's packed full of live examples and exercises, and will help deepen your understanding of React's fundamentals, including:
+
+- elements
+- function components
+- events
+- hooks
+- class components
+- *and more*
+
+You can try out the [first lessons and exercises](/courses/react-fundamentals/basics/one-file-react-app/) for free -- see you there!
+

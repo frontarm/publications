@@ -235,6 +235,4 @@ The `React.createElement()` function is *The Most Important* of React's three fu
 
 Learning the fundamentals is a great way to boost your understanding of the rest of React's ecosystem. As a bonus, the fundamentals rarely change. In fact, other than the URLs in the `<script>` tags, the exercise's code is unchanged from a [similar guide](http://jamesknelson.com/learn-raw-react-no-jsx-flux-es6-webpack/) I wrote 3 years ago!
 
-Do you want to invest in a deeper understanding of React's fundamentals, and gain an important skill that'll stay with you for years? Then click through to my [React (without the buzzwords)](/courses/learn-raw-react/) course. You've just worked through most of the first two lessons, so you're off to a great start!
-
-[See the *React (without the buzzwords)* outline &raquo;](/courses/learn-raw-react/)
+Do you want to invest in a deeper understanding of React's fundamentals, and gain an important skill that'll stay with you for years? Then click through to my [React fundamentals](/courses/react-fundamentals/) course. You've just worked through most of the first two lessons, so you're off to a great start!

@@ -114,9 +114,9 @@ React is one of the most stable frontend libraries out there. In fact, even the 
 
 But React is at a crossroads. It's starting to change again. Planned APIs like Time Slicing and Suspense mean that you'll be able to do more with raw React. And with less dependence on 3rd party libraries, more than ever your career depends on a solid understanding of React itself.
 
-The 9 resources above give you a great overview of many of React's fundamentals. But if you're looking for a more practical approach, my [React (without the buzzwords)](/courses/learn-raw-react/) course will guide you through the process of building a contact list app, with 55 live editable examples and exercises. You can give it a try here:
+The 9 resources above give you a great overview of many of React's fundamentals. But if you're looking for a more practical approach, my [React fundamentals](/courses/react-fundamentals/) course will guide you through the process of building a contact list app and an animated fractal tree, with *tons* of live editable examples and exercises. You can give it a try here:
 
-[Lesson 1: An app in one file &raquo;](/courses/learn-raw-react/basics/one-file-react-app/)
+[Lesson 1: A 2-minute app &raquo;](/courses/react-fundamentals/basics/one-file-react-app/)
 
 Another resource that's stayed up-to-date throughout the years is my JavaScript PDF cheatsheets. They're available for free - just login with GitHub for access:
 

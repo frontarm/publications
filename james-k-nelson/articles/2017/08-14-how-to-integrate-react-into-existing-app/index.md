@@ -96,7 +96,7 @@ Of course, your application can still communicate with your React components; yo
 <Aside>
 <Details>
 
-For more details on `ReactDOM.render()`, you can see my lesson on [How `ReactDOM.render()` works](/courses/learn-raw-react/how-it-works/reactdom-render/).
+For more details on `ReactDOM.render()`, you can see my lesson on [How `ReactDOM.render()` works](/courses/react-fundamentals/how-react-works/reactdom-render/).
 
 </Details>
 </Aside>

@@ -77,5 +77,5 @@ Learning a lot from these demos?
 
 Then you'll learn even more from our courses! They're packed full of demos and live exercises, so that you can build confidence with the topic *while* you learn.
 
-- [React (without the buzzwords) &raquo](https://frontarm.com/courses/learn-raw-react/)
+- [React fundamentals &raquo](https://frontarm.com/courses/react-fundamentals/)
 - [Mastering Asynchronous JavaScript &raquo](https://frontarm.com/courses/async-javascript/)

@@ -129,6 +129,6 @@ I found the topic (and the game) interesting, and wanted to pay the explanation 
 ## Where to now?
 
 - Learn why JavaScript has so many callbacks in [Why Async: JavaScript and the real world &raquo;](/courses/async-javascript/promises/why-async/)
-- Master React's fundamentals in [React (without the buzzwords) &raquo;](/courses/learn-raw-react/)
+- Master React's fundamentals in my [React fundamentals course &raquo;](/courses/react-fundamentals/)
 - [Become a free member](/members/register/) to be the first to hear about new articles and guides.
 

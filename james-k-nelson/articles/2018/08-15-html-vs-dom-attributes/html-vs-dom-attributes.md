@@ -1,4 +1,4 @@
-import { Housekeeping, Spoiler, Important, Caution, Reference, Story, Details, Comment } from 'shared/documentHelpers' 
+import { Doc } from '@frontarm/doc'
 
 One confusing thing about the web is that HTML attributes have different names when they're used within JavaScript.
 
@@ -12,8 +12,10 @@ For example, consider this snippet of HTML:
 
 To interact with the navbar `<div>` from JavaScript, you'll need a **DOM node** object that represents it. And to get one, you use `document.getElementById()`.
 
-```js{defaultRightPanel=console,unpersisted}
-///index.html
+```html
+//---
+rightPanel: console
+//--- index.html
 <div id='navbar' class='dark'>
   <a href="/">Home</a>
 </div>
@@ -30,8 +32,10 @@ To interact with the navbar `<div>` from JavaScript, you'll need a **DOM node** 
 
 But what if you want to access the `class`? The obvious property to try would be `domNode.class`. But `class` is a reserved word in JavaScript. So instead, you'll need to access the `className` property.
 
-```js{defaultRightPanel=console,unpersisted}
-///index.html
+```html
+//---
+rightPanel: console
+//--- index.html
 <div id='navbar' class='dark'>
   <a href="/">Home</a>
 </div>
@@ -54,8 +58,10 @@ And that's why **the DOM treats an element's `style` as an object instead of a s
 
 To get or set the value of a single style property, you just access its camelCased name underneath the DOM node's `style` object. For example:
 
-```js{defaultRightPanel=console,unpersisted}
-///index.html
+```html
+//---
+rightPanel: console
+//--- index.html
 <div id='important' style='border: 2px solid red; border-radius: 10px;'>
   AN IMPORTANT MESSAGE
 </div>
@@ -74,8 +80,8 @@ HTML, like most other technologies, has one of those nice-for-beginners but shit
 
 Behold:
 
-```html{unpersisted}
-///index.html
+```html
+//--- index.html
 <div style='color: darkgreen;'><code>style</code> attribute</div>
 <div STYLE='color: darkgreen;'><CODE>STYLE</CODE> attribute</div>
 <div sTyLe='color: darkgreen;'><cOdE>sTyLe</CoDe> attribute</div>
@@ -87,8 +93,10 @@ And how do you convert `lowercase` to `camelCase`? Through trial and error, and 
 
 Here are a few to watch out for, as well as some other exceptions:
 
-```js{defaultRightPanel=console,unpersisted}
-///index.html
+```html
+//---
+rightPanel: console
+//--- index.html
 <label id='shoeSize-label' for='shoeSize'>Shoe size</label>
 <input id='shoeSize' tabindex='2' value='5' readonly />
 
@@ -104,10 +112,10 @@ console.log(document.getElementById('phase').tabIndex)
 </script>
 ```
 
-<Important title='Remember!'>
+<Doc.Details title='Remember!'>
 If it seems that the browser is ignoring a DOM propery, it may just be a matter of capitalization.
-</Important>
+</Doc.Details>
 
 ## More reading
 
-- [Learn Raw React: Props and Styling](/courses/learn-raw-react/basics/props-and-styling/)
+- [React Fundamentals: Props and Styling](/courses/react-fundamentals/basics/props-and-styling/)

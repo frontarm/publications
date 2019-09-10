@@ -4,7 +4,7 @@ export { breadboardHelpers } from './breadboardHelpers'
 
 JSX is just a tool that converts files like this:
 
-```js
+```jsx
 let element =
   <div className='test'>
     Hello, world!

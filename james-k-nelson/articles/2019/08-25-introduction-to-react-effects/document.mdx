@@ -1,0 +1,352 @@
+import { Doc } from '@frontarm/doc'
+export const demoboardHelpers = {
+  '/FractalTreeBranch.js': require('!!raw-loader!./FractalTreeBranch.js'),
+  '/FractalHelpers.js': require('!!raw-loader!./FractalHelpers.js'),
+  '/styles.css': require('!!raw-loader!./form-styles.css'),
+  '/validate.js': require('!!raw-loader!./validate.js')
+}
+
+Imagine that for whatever reason (a wonderful reason, I'm sure), you've decided to write a self-contained, animated fractal tree component. Because the component is self-contained, it'll somehow need to schedule its own renders using `window.requestAnimationFrame()`. And for a first attempt, you may decide to just call `requestAnimationFrame()` on every render. You can see this in action by uncommenting lines 23-26 below.
+
+```js
+//--- index.js
+import React, { useState } from 'react'
+import ReactDOM from 'react-dom'
+import FractalTreeBranch from './FractalTreeBranch'
+
+// The height and width of the entire window
+const { innerHeight, innerWidth } = window
+
+function App() {
+  let [time, setTime] = useState(Date.now())
+  let [mousePosition, setMousePosition] = useState({
+    x: innerWidth / 2,
+    y: innerHeight / 2,
+  })
+  let fromHorizontalCenter = (innerWidth / 2 - mousePosition.x) / innerWidth
+  let fromVerticalCenter = (innerHeight / 2 - mousePosition.y) / innerHeight
+  let lean = 0.03 * Math.sin(time / 2000) + fromHorizontalCenter / 4
+  let sprout =
+    0.3 +
+    0.05 * Math.sin(time / 1300) +
+    fromVerticalCenter / 5 -
+    0.2 * Math.abs(0.5 - fromHorizontalCenter / 2)
+  
+  // window.requestAnimationFrame(() => {
+  //   // Update time to trigger a re-render
+  //   setTime(Date.now())
+  // })
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+        overflow: 'hidden',
+      }}
+      onMouseMove={event => {
+        setMousePosition({
+          x: event.clientX,
+          y: event.clientY,
+        })
+      }}>
+      <FractalTreeBranch lean={lean} size={150} sprout={sprout} />
+    </div>
+  )
+}
+
+ReactDOM.render(<App />, document.getElementById('root'))
+//--- FractalTreeBranch.js <-- FractalTreeBranch.js
+//--- FractalHelpers.js <-- FractalHelpers.js
+```
+
+<Doc.Details aside>
+
+Need any help with `useState()`, JSX, or other React features in the above example? Check out my [React Fundamentals (without the buzzwords)](/courses/react-fundamentals) course and play with fractals while learning what you need.
+
+</Doc.Details>
+
+At first, it looks to work well enough -- at least until you try moving the mouse over the tree with the comments removed.
+
+Here's the problem: if the mouse moves, then React will update the state and re-render the component, thus scheduling *another* render with `requestAnimationFrame()` before the existing one has executed. Now you have *two* scheduled renders, twice the CPU usage, half the frame rate, and basically it just stops working so well.
+
+---
+
+In the above example, the call to `window.requestAnimationFrame()` is what's called a **side effect**; it's something that your component does *in addition* to returning elements.
+
+As you can see, running side effects within the render function doesn't tend to work so well. *But you still need to perform side effects.* They're what enables your application to be *actually useful*, doing things like:
+
+- Loading data from the server
+- Setting and clearing timers
+- Interacting with the DOM
+
+<Doc.AsideTop>
+
+But while side effects are everywhere, it's *incredibly* unusual to find effects that must be performed each and every time the component function is called. For one thing, React will sometimes call the component function multiple times before a single update. And surprisingly, React can also call the component function without ever updating the DOM *at all*!
+
+<Doc.Details aside>
+
+When using features like [React Suspense](https://reactjs.org/docs/react-api.html#reactsuspense), it's possible for component functions to be stopped mid-execution, and repeated later on. This can result in parts of the function being run multiple times, or not being run at all.
+
+</Doc.Details>
+</Doc.AsideTop>
+
+It seems like what you need is a safe way of running effects, cleaning up after them, and doing so without hurting performance. And that's where `useEffect()` comes in.
+
+
+The `useEffect()` function
+--------------------------
+
+This hook function lets you ask React to do something *after* the component has successfully finished rendering.
+
+```js
+useEffect(() => {
+  // do something
+})
+```
+
+There's a lot of different things that you can do with `useEffect()`, but for the time being, let's consider a form with server-side validation. Here's an example -- try typing in a username to see if it is available.
+
+```js
+//---
+persistenceKey: simple-useEffect
+theme: light
+//--- index.js
+import React, { useEffect, useState } from 'react'
+import ReactDOM from 'react-dom'
+import validate from './validate' 
+
+function App() {
+  let [username, setUsername] = useState('')
+  let [validationMessage, setValidationMessage] = useState()
+
+  useEffect(() => {
+    let promise = validate(username)
+    promise.then(
+      message => setValidationMessage(message)
+    )
+  })
+
+  return (
+    <label>
+      <span className="label">Username</span>
+      <input
+        value={username}
+        onChange={event => setUsername(event.target.value)}
+      />
+      {validationMessage || ''}
+    </label>
+  )
+}
+
+ReactDOM.render(<App />, document.getElementById('root'))
+//--- validate.js <-- validate.js
+//--- styles.css <-- styles.css
+```
+
+<Doc.Details aside>
+
+Want to know more about Promise objects, like the one in the above example? Check out my [Mastering Async JavaScript](/courses/async-javascript) course for a detailed introduction.
+
+</Doc.Details>
+
+This example is pretty simple. In fact, it's *so* simple that you could do it with event handler functions alone -- so why use effects?
+
+The thing about server-side validation is that you probably don't actually want to perform it on every keystroke. It creates *far* too many requests -- which you'll get a feeling for if you open up the console above. Instead, what you want to do is *debounce* the requests; you want to wait until the user has stopped typing, and *then* send a request.
+
+So how do you implement a debounce? Well, the waiting part is easy: just use `setTimeout()`. But again, if you just schedule a delayed request on each keystroke, you'll end up with too many requests. What you *really* want to be able to do is to *cancel* the previous timeout before creating a new one. And that's where cleanup functions come in.
+
+
+The cleanup function
+--------------------
+
+When your `useEffect()` callback returns a function, React will call that function once the effect is no longer needed. This lets you clean up after your effects by cancelling subscriptions, freeing resources, cancelling timeouts, etc.
+
+<Doc.AsideTop>
+
+```js
+useEffect(() => {
+  // do something
+
+  return () => {
+    // clean up
+  }
+})
+```
+
+<Doc.Beware aside title="Effects and async">
+
+The `useEffect()` hook does *not* allow you to pass in async callbacks. And when you think about it, this makes sense -- async functions always return a promise, which would make it impossible to return a cleanup function.
+
+</Doc.Beware>
+</Doc.AsideTop>
+
+There are *two* situations in which React will call the cleanup function. Do you know what they are? Have a think about it, and when you're ready, check your answer below.
+
+<Doc.Spoiler>
+
+1. The cleanup function will be called when the component is unmounted.
+2. The cleanup function will be called the *next time* the effect callback is run.
+
+</Doc.Spoiler>
+
+The first of these situations is hopefully fairly obvious. But what about the second situation? *This is what makes the hook cleanup function so powerful.* It lets you declare to React:
+
+*Yo React, I want this thing to happen soon after each render,* ***but only until the next render.***
+
+Or for a more specific example, maybe you want a timeout to be scheduled for 500ms in the future, but you want to cancel it if another timeout is scheduled *before* 500ms passes. Here's how you'd do it:
+
+```js
+//---
+persistenceKey: blog-useEffect-cleanup
+//--- index.js
+import React, { useEffect, useState } from 'react'
+import ReactDOM from 'react-dom'
+import validate from './validate' 
+
+function App() {
+  let [username, setUsername] = useState('')
+  let [validationMessage, setValidationMessage] = useState()
+
+  useEffect(() => {
+    let timeout = setTimeout(() => {
+      validate(username).then(
+        message => setValidationMessage(message)
+      )
+    }, 500)
+    return () => {
+      clearTimeout(timeout)
+    }
+  })
+
+  return (
+    <label>
+      <span className="label">Username</span>
+      <input
+        value={username}
+        onChange={event => setUsername(event.target.value)}
+      />
+      {validationMessage || ''}
+    </label>
+  )
+}
+
+ReactDOM.render(<App />, document.getElementById('root'))
+//--- solution:index.js
+import React, { useEffect, useState } from 'react'
+import ReactDOM from 'react-dom'
+import validate from './validate' 
+
+function App() {
+  let [username, setUsername] = useState('')
+  let [validationMessage, setValidationMessage] = useState()
+
+  useEffect(() => {
+    let timeout = setTimeout(() => {
+      validate(username).then(
+        message => setValidationMessage(message)
+      )
+    }, 500)
+    return () => {
+      clearTimeout(timeout)
+    }
+  }, [username])
+
+  return (
+    <label>
+      <span className="label">Username</span>
+      <input
+        value={username}
+        onChange={event => setUsername(event.target.value)}
+      />
+      {validationMessage || ''}
+    </label>
+  )
+}
+
+ReactDOM.render(<App />, document.getElementById('root'))
+//--- validate.js <-- validate.js
+//--- styles.css <-- styles.css
+```
+
+Simple, enough, right? But there's still something wrong. If you try typing in a username and open the console, you'll find that the number of validations is still higher than it needs to be. Do you know why? Have a think about it, and then check your reasoning below.
+
+<Doc.Spoiler>
+
+In the above example, the validation is scheduled to be run *each and every* time that the component renders. And given that most renders occur due to keypresses, this *almost* makes sense. *However.* Updating the validation message also requires a render, which means that a second validation is performed immediately after the first validation completes.
+
+</Doc.Spoiler>
+
+To fix this, we'll need a way to conditionally perform effects.
+
+
+Conditional effects
+-------------------
+
+In the real world, it's rare that you'll want to run your effect after *each and every* update. Instead, you'll often want your effect to run only after a specific condition changes. Luckily, React makes this super easy.
+
+The `useEffect()` function allows you to specify a list of values that the effect depends on as its second argument. When you do so, it will only schedule the effect to be executed on renders where one of the values has changed from the previous render.
+
+```js
+useEffect(
+  () => {
+    // do something
+
+    return () => {
+      // clean up
+    }
+  },
+  [executeWhenThisChanges, orWhenThisChanges]
+)
+```
+
+Given that this is a pretty simple fix, let's see if you can implement it in the above example as an exercise.
+
+**Your task is to prevent a second validation from being performed after each first validation completes.**
+
+Once you've given this exercise a try, you can click the *solution* button in the above editor to compare your work with mine.
+
+<Doc.Beware title={<>Effects and <code>if</code></>}>
+
+`useEffect()` is a hook, so it must follow [the rules of hooks](https://reactjs.org/docs/hooks-rules.html). This means that **you cannot put `useEffect()` within an `if` statement**. You can still call effects conditionally with `if` statements though -- you'll just have to put them *inside* the `useEffect()` callback:
+
+```js
+useEffect(() => {
+  if (condition) {
+    // do something
+  }
+})
+```
+
+</Doc.Beware>
+
+
+A quiz
+------
+
+Let's test your understanding with a little quiz. Imagine that you're building a contact list full of billionaires -- just like the one in [React Fundamentals (without the buzzwords)](/courses/react-fundamentals). When the app first loads, your contact list component needs to fetch the data from the server.
+
+Naturally, you'll use an effect -- but **will you need to pass the effect a dependencies array? And if so, what will its contents be?**
+
+Have a little think about this, and once you're ready, check your answer in the box below.
+
+<Doc.Spoiler>
+
+Given that you only want to fetch the data when the app first loads, the effect only needs to run once. This can be accomplished by passing an empty dependencies array. 
+
+```js
+useEffect(() => {
+  // load your data here
+}, [])
+```
+
+React will only run the effect when something inside the dependencies array changes. Given that there's nothing in there, nothing can ever change -- so the effect will only run once!
+  
+</Doc.Spoiler>
+
+*This article is based on the `useEffect()` lesson in [React Fundamentals (without the buzzwords)](/courses/react-fundamentals). If you'll benefit from a deeper understanding of React, then there's no other way to learn about Elements, Hooks, JSX and Create React App with fractals, billionaires and live exercises. I think you'll love it! 🤓*
+
+**[Check out the React Fundamentals course &raquo;](/courses/react-fundamentals)**

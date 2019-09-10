@@ -162,6 +162,6 @@ The great thing about React is that *it's just JavaScript*. And while this does 
 But how to put that power to use isn't always obvious. So if you'd like some help, here's a few suggestions:
 
 - For more details on how to apply conditional rendering in practice, my guide to [Conditional Rendering with React](/articles/react-conditional-rendering/) covers the four main approaches, with exercises to test your understanding. 
-- If you'd prefer to start learning React from the fundamentals, check out my course on [React (without the buzzwords)](/courses/learn-raw-react/basics/one-file-react-app/).
+- If you'd prefer to start learning React from the fundamentals, check out my complete [React fundamentals course](/courses/react-fundamentals/).
 
 Thanks so much for reading this far! Since you're here, I have a question for *you*: Have you run into any other React footguns that I missed? Or is there anything else you'd like to hear more about? Let me know by tweeting [@james_k_nelson](https://twitter.com/james_k_nelson)!

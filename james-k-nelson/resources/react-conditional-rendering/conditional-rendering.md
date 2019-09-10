@@ -63,7 +63,7 @@ JSX tags become React Elements. React Elements are just JavaScript objects. And 
 <Aside>
 <Details>
 
-Want to figure out exactly what these Element objects are? Check out the free [Elements (are objects)](/courses/learn-raw-react/basics/elements-are-objects/) lesson from my [React (without the buzzwords)](/courses/learn-raw-react/) course.
+Want to figure out exactly what these Element objects are? Check out the free [Elements (are objects)](/courses/react-fundamentals/basics/elements-are-objects/) lesson from my [React fundamentals](/courses/react-fundamentals/) course.
 
 </Details>
 </Aside>
@@ -1391,9 +1391,9 @@ Now that you've learned all about conditional rendering, here's a few suggestion
 - If you're at all unsure about how JSX elements translate to `React.createElement()`, have a play around with the [JSX Live Cheatsheet](/toolbox/jsx-live-cheatsheet/).
 
 
-- If you'd like to know more about the `createElement()` function itself, and what element objects are, take a look at the [Elements are Objects](/courses/learn-raw-react/basics/elements-are-objects/) lesson from my course on [React (without the buzzwords)](/courses/learn-raw-react/).
+- If you'd like to know more about the `createElement()` function itself, and what element objects are, take a look at the [Elements are Objects](/courses/react-fundamentals/basics/elements-are-objects/) lesson from my course on [React (without the buzzwords)](/courses/react-fundamentals/).
 
 
-- Lists and loops are closely related to conditional rendering. To learn more about them, see the [Lists and Loops](/courses/learn-raw-react/basics/lists-and-loops/) lesson from the same course.
+- Lists and loops are closely related to conditional rendering. To learn more about them, see the [Lists and Loops](/courses/react-fundamentals/basics/lists-and-loops/) lesson from the same course.
 
 Thanks so much for reading through this guide! And if you have any questions or comments, send me an email anytime at [james@frontarm.com](mailto:james@frontarm.com)!

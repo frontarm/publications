@@ -64,7 +64,7 @@ JSX tags become React Elements. React Elements are just JavaScript objects. And 
 <Aside>
 <Details>
 
-Want to figure out exactly what these Element objects are? Check out the free [Elements (are objects)](/courses/learn-raw-react/basics/elements-are-objects/) lesson from my [React (without the buzzwords)](/courses/learn-raw-react/) course.
+Want to figure out exactly what these Element objects are? Check out the free [Elements (are objects)](/courses/react-fundamentals/basics/elements-are-objects/) lesson from my [React fundamentals](/courses/react-fundamentals/) course.
 
 </Details>
 </Aside>

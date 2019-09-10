@@ -1,7 +1,7 @@
 import * as React from 'react'
-import { createLegacyDocumentPage } from 'shared/pages/createLegacyDocumentPage'
+import { createDocumentPage } from 'shared/pages/createDocumentPage'
 
-export default createLegacyDocumentPage({
+export default createDocumentPage({
   title: 'HTML attributes vs. DOM properties',
   blurb:
     <p>

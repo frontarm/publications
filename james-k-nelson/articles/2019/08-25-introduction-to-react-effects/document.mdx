@@ -1,83 +1,123 @@
 import { Doc } from '@frontarm/doc'
 export const demoboardHelpers = {
-  '/FractalTreeBranch.js': require('!!raw-loader!./FractalTreeBranch.js'),
-  '/FractalHelpers.js': require('!!raw-loader!./FractalHelpers.js'),
-  '/styles.css': require('!!raw-loader!./form-styles.css'),
-  '/validate.js': require('!!raw-loader!./validate.js')
+  '/FractalTree.js': require('!!raw-loader!./effects/FractalTree.js'),
+  '/FractalHelpers.js': require('!!raw-loader!./effects/FractalHelpers.js'),
+  '/index.js': require('!!raw-loader!./effects/index.js'),
+  '/styles.css': require('!!raw-loader!./effects/styles.css'),
+  '/getUsernameAvailability.js': require('!!raw-loader!./effects/getUsernameAvailability.js')
 }
 
-Imagine that for whatever reason (a wonderful reason, I'm sure), you've decided to write a self-contained, animated fractal tree component. Because the component is self-contained, it'll somehow need to schedule its own renders using `window.requestAnimationFrame()`. And for a first attempt, you may decide to just call `requestAnimationFrame()` on every render. You can see this in action by uncommenting lines 23-26 below.
+<Doc.Details aside>
+
+This lesson is based on the effects lesson in my [React, Firebase & Bacon](/bacon/) course.
+
+</Doc.Details>
+
+Imagine that for some reason, you've decided to create a React component that renders an animated fractal tree. In fact, let's say that you're already 90% of the way there -- you *have* a fractal tree component, and now you want to animate it.
 
 ```js
-//--- index.js
+//--- App.js
 import React, { useState } from 'react'
-import ReactDOM from 'react-dom'
-import FractalTreeBranch from './FractalTreeBranch'
+import FractalTreeFrame from './FractalTreeFrame'
 
 // The height and width of the entire window
 const { innerHeight, innerWidth } = window
 
-function App() {
-  let [time, setTime] = useState(Date.now())
-  let [mousePosition, setMousePosition] = useState({
+export default function App() {
+  const [mousePosition, setMousePosition] = useState({
     x: innerWidth / 2,
     y: innerHeight / 2,
   })
-  let fromHorizontalCenter = (innerWidth / 2 - mousePosition.x) / innerWidth
-  let fromVerticalCenter = (innerHeight / 2 - mousePosition.y) / innerHeight
-  let lean = 0.03 * Math.sin(time / 2000) + fromHorizontalCenter / 4
-  let sprout =
-    0.3 +
-    0.05 * Math.sin(time / 1300) +
-    fromVerticalCenter / 5 -
-    0.2 * Math.abs(0.5 - fromHorizontalCenter / 2)
-  
+
+  return (
+    <FractalTreeFrame
+      mousePosition={mousePosition}
+      onMouseMove={({ clientX: x, clientY: y }) =>
+        setMousePosition({ x, y })
+      }
+      time={Date.now()}
+    />
+  )
+}
+//--- FractalTreeFrame.js <-- FractalTree.js
+//--- FractalHelpers.js <-- FractalHelpers.js
+//--- index.js <-- index.js
+```
+
+If you move the mouse around the preview area, you'll see that the tree is *already* somewhat animated, due to the `onMouseMove` handler:
+
+```jsx
+onMouseMove={({ clientX: x, clientY: y }) =>
+  setMousePosition({ x, y })
+}
+```
+
+Each time the mouse moves over the preview area, React calls this event handler. This in turn updates the component state, triggering a re-render of the component with a new value of the `time` prop.
+
+```jsx
+time={Date.now()}
+```
+
+<Doc.AsideTop>
+
+Of course, it won't do to require the user to constantly move their mouse to keep the animation going. Ideally, the component would *automatically* schedule a new frame after each frame is rendered, using something like the browser's `requestAnimationFrame()` function.
+
+<Doc.Details aside>
+
+`requestAnimationFrame()` requests that the browser calls a specified function before the next repaint -- allowing you to render an animation one frame at a time. For more details, [see MDN](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame).
+
+</Doc.Details>
+</Doc.AsideTop>
+
+As it happens, there's a pretty obvious way to make this work. Given that updating the state also triggers a re-render, you can store the current time with a `useState` hook. Then, you can trigger re-render by updating the time in a `requestAnimationFrame()` callback. To try it out, just uncomment lines 14-17 below:
+
+```js
+//--- App.js
+import React, { useState } from 'react'
+import FractalTreeFrame from './FractalTreeFrame'
+
+// The height and width of the entire window
+const { innerHeight, innerWidth } = window
+
+export default function App() {
+  const [time, setTime] = useState(Date.now())
+  const [mousePosition, setMousePosition] = useState({
+    x: innerWidth / 2,
+    y: innerHeight / 2,
+  })
+
   // window.requestAnimationFrame(() => {
   //   // Update time to trigger a re-render
   //   setTime(Date.now())
   // })
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        bottom: 0,
-        right: 0,
-        overflow: 'hidden',
-      }}
-      onMouseMove={event => {
-        setMousePosition({
-          x: event.clientX,
-          y: event.clientY,
-        })
-      }}>
-      <FractalTreeBranch lean={lean} size={150} sprout={sprout} />
-    </div>
+    <FractalTreeFrame
+      mousePosition={mousePosition}
+      onMouseMove={({ clientX: x, clientY: y }) =>
+        setMousePosition({ x, y })
+      }
+      time={time}
+    />
   )
 }
-
-ReactDOM.render(<App />, document.getElementById('root'))
-//--- FractalTreeBranch.js <-- FractalTreeBranch.js
+//--- FractalTreeFrame.js <-- FractalTree.js
 //--- FractalHelpers.js <-- FractalHelpers.js
+//--- index.js <-- index.js
 ```
 
-<Doc.Details aside>
+Once you've removed the comment above, this animation looks to work pretty well! That is, at least until you try moving the mouse over the tree as well. Go ahead, try quickly moving your mouse over the tree, and see how performance takes a nosedive.
 
-Need any help with `useState()`, JSX, or other React features in the above example? Check out my [React Fundamentals (without the buzzwords)](/courses/react-fundamentals) course and play with fractals while learning what you need.
+*What the hell is going on?*
 
-</Doc.Details>
+Here's the problem: if the mouse moves, then React will update the state and re-render the component, thus scheduling *another* render in addition to the one already scheduled by `requestAnimationFrame()`. Now you have *two* scheduled renders, twice the CPU usage, half the frame rate, and everything starts to grind to a halt.
 
-At first, it looks to work well enough -- at least until you try moving the mouse over the tree with the comments removed.
 
-Here's the problem: if the mouse moves, then React will update the state and re-render the component, thus scheduling *another* render with `requestAnimationFrame()` before the existing one has executed. Now you have *two* scheduled renders, twice the CPU usage, half the frame rate, and basically it just stops working so well.
-
----
+## So... effects?
 
 In the above example, the call to `window.requestAnimationFrame()` is what's called a **side effect**; it's something that your component does *in addition* to returning elements.
 
-As you can see, running side effects within the render function doesn't tend to work so well. *But you still need to perform side effects.* They're what enables your application to be *actually useful*, doing things like:
+Side effects are what make your application *actually useful*. They're responsible for things like:
 
 - Loading data from the server
 - Setting and clearing timers
@@ -85,7 +125,7 @@ As you can see, running side effects within the render function doesn't tend to 
 
 <Doc.AsideTop>
 
-But while side effects are everywhere, it's *incredibly* unusual to find effects that must be performed each and every time the component function is called. For one thing, React will sometimes call the component function multiple times before a single update. And surprisingly, React can also call the component function without ever updating the DOM *at all*!
+As you can see from the above example, it's entirely possible to put effectful code directly in the component function. The thing is, the resulting effects occur *each and every* time the component function is called -- which is rarely the desired behavior. More often, you'll want the effect to occur in response to specific conditions -- and to *stop* occurring once those conditions are removed.
 
 <Doc.Details aside>
 
@@ -94,57 +134,65 @@ When using features like [React Suspense](https://reactjs.org/docs/react-api.htm
 </Doc.Details>
 </Doc.AsideTop>
 
-It seems like what you need is a safe way of running effects, cleaning up after them, and doing so without hurting performance. And that's where `useEffect()` comes in.
-
 
 The `useEffect()` function
 --------------------------
 
-This hook function lets you ask React to do something *after* the component has successfully finished rendering.
+This hook function lets you ask React to do something *after* the component has finished rendering to the DOM. There are a few ways to use it, so let's start with the simplest:
 
 ```js
 useEffect(() => {
-  // do something
+  // do stuff after update
 })
 ```
 
-There's a lot of different things that you can do with `useEffect()`, but for the time being, let's consider a form with server-side validation. Here's an example -- try typing in a username to see if it is available.
+When `useEffect()` receives a function as its first and only argument, it'll call that function on *every* update. You might use this to, for example, validate usernames in a social network's onboarding sequence. You can see how I've approached this below -- go ahead, try typing in a username to test it out!
 
 ```js
 //---
-persistenceKey: simple-useEffect
+persistenceKey: effects-username-availability
 theme: light
-//--- index.js
+//--- App.js
 import React, { useEffect, useState } from 'react'
-import ReactDOM from 'react-dom'
-import validate from './validate' 
+import getUsernameAvailability from './getUsernameAvailability'
 
-function App() {
-  let [username, setUsername] = useState('')
-  let [validationMessage, setValidationMessage] = useState()
+export default function App() {
+  const [username, setUsername] = useState('')
+  const [availability, setAvailability] = useState({})
+  const handleChange = event => setUsername(event.target.value)
 
   useEffect(() => {
-    let promise = validate(username)
-    promise.then(
-      message => setValidationMessage(message)
-    )
+    if (username && username !== availability.username) {
+      // The promises returned by getUsernameAvailability
+      // will always resolve in the same order as they're created,
+      // so we don't have to worry about race conditions here.
+      getUsernameAvailability(username).then(
+        isAvailable => setAvailability({ username, isAvailable })
+      )
+    }
   })
 
   return (
-    <label>
-      <span className="label">Username</span>
-      <input
-        value={username}
-        onChange={event => setUsername(event.target.value)}
-      />
-      {validationMessage || ''}
-    </label>
+    <div className="nametag">
+      <h2>Hello</h2>
+      <label>
+        <p>my username is</p>
+        <div className="field">
+          <span className="at">@</span>
+          <input value={username} onChange={handleChange} />
+          <span className="icon">
+            {username && availability.username === username && (
+              availability.isAvailable ? "✔️" : "❌"
+            )}
+          </span>
+        </div>
+      </label>
+    </div>
   )
 }
-
-ReactDOM.render(<App />, document.getElementById('root'))
-//--- validate.js <-- validate.js
+//--- getUsernameAvailability.js <-- getUsernameAvailability.js
 //--- styles.css <-- styles.css
+//--- index.js <-- index.js
 ```
 
 <Doc.Details aside>
@@ -153,28 +201,186 @@ Want to know more about Promise objects, like the one in the above example? Chec
 
 </Doc.Details>
 
-This example is pretty simple. In fact, it's *so* simple that you could do it with event handler functions alone -- so why use effects?
+In the above example, the effect starts by checking whether validation still needs to be performed for the current username. Then, if validation *is* still required, it calls `getUsernameAvailability()` and saves the result to component state.
 
-The thing about server-side validation is that you probably don't actually want to perform it on every keystroke. It creates *far* too many requests -- which you'll get a feeling for if you open up the console above. Instead, what you want to do is *debounce* the requests; you want to wait until the user has stopped typing, and *then* send a request.
+While it may seem like a minor (and imperfect) optimization, the `if` statement inside the above effect is actually *incredibly* important. Do you know why?
 
-So how do you implement a debounce? Well, the waiting part is easy: just use `setTimeout()`. But again, if you just schedule a delayed request on each keystroke, you'll end up with too many requests. What you *really* want to be able to do is to *cancel* the previous timeout before creating a new one. And that's where cleanup functions come in.
+<Doc.Spoiler>
+
+Without the `if` statement, you get an infinite loop.
+
+</Doc.Spoiler>
+
+Saving the validation result to component state triggers another update, which triggers the effect, which triggers the update, which... yeah, you get the idea. 
+
+Effects often need to update component state, and this presents a bit of a problem: if you run these effects in response to *every* update, you can easily end up with infinite loops. Typically though, you *don't want* to run effects in response to every update. You only want them to respond to specific events -- and that's where the second argument of `useEffect()` comes in.
+
+
+Conditional effects
+-------------------
+
+The second argument to `useEffect()` -- called the **dependencies array** -- instructs React to **only run the effect if a dependency has changed from its previous value**.
+
+<Doc.AsideTop>
+
+```js
+useEffect(
+  () => {
+    // do stuff after specified updates
+  },
+  [executeWhenThisChanges, orWhenThisChanges]
+)
+```
+
+<Doc.Details aside title="Empty arrays">
+
+If you pass an empty array `[]` for the dependencies, the effect will only run once -- on mount.
+
+</Doc.Details>
+</Doc.AsideTop>
+
+The dependencies array gives you a simple way to create effects that respond to specific events, *without* running into infinite loops. And with that in mind, let's revisit the username example with an exercise.
+
+**Your task is to refactor the below example with a dependencies array, so that it no longer uses an `if` statement.**
+
+Be careful to add the dependencies array *before* removing the `if` statement though -- otherwise you'll end up with an infinite loop!
+
+```js
+//---
+persistenceKey: effects-username-conditional
+//--- App.js
+import React, { useEffect, useState } from 'react'
+import getUsernameAvailability from './getUsernameAvailability'
+
+export default function App() {
+  const [username, setUsername] = useState('')
+  const [availability, setAvailability] = useState({})
+  const handleChange = event => setUsername(event.target.value)
+
+  useEffect(() => {
+    if (username && username !== availability.username) {
+      // The promises returned by getUsernameAvailability
+      // will always resolve in the same order as they're created,
+      // so we don't have to worry about race conditions here.
+      getUsernameAvailability(username).then(
+        isAvailable => setAvailability({ username, isAvailable })
+      )
+    }
+  })
+
+  return (
+    <div className="nametag">
+      <h2>Hello</h2>
+      <label>
+        <p>my username is</p>
+        <div className="field">
+          <span className="at">@</span>
+          <input value={username} onChange={handleChange} />
+          <span className="icon">
+            {username && availability.username === username && (
+              availability.isAvailable ? "✔️" : "❌"
+            )}
+          </span>
+        </div>
+      </label>
+    </div>
+  )
+}
+//--- solution:App.js
+import React, { useEffect, useState } from 'react'
+import getUsernameAvailability from './getUsernameAvailability'
+
+export default function App() {
+  const [username, setUsername] = useState('')
+  const [availability, setAvailability] = useState({})
+  const handleChange = event => setUsername(event.target.value)
+
+  // Because this effect supplies [username] as a second argument,
+  // it'll only run after updates where `username` has changed value.
+  useEffect(() => {
+    if (username) {
+      getUsernameAvailability(username).then(
+        isAvailable => setAvailability({ username, isAvailable })
+      )
+    }
+  }, [username])
+
+  return (
+    <div className="nametag">
+      <h2>Hello</h2>
+      <label>
+        <p>my username is</p>
+        <div className="field">
+          <span className="at">@</span>
+          <input value={username} onChange={handleChange} />
+          <span className="icon">
+            {username && availability.username === username && (
+              availability.isAvailable ? "✔️" : "❌"
+            )}
+          </span>
+        </div>
+      </label>
+    </div>
+  )
+}
+//--- getUsernameAvailability.js <-- getUsernameAvailability.js
+//--- styles.css <-- styles.css
+//--- index.js <-- index.js
+```
+
+Did you have a go? Great! In that case, if you take a look at the solution for the above exercise, you might notice something interesting. Here's the original:
+
+```js
+useEffect(() => {
+  if (username !== availability.username) {
+    // ...
+  }
+})
+```
+
+In contrast, here's the solution with a dependencies array:
+
+```js
+useEffect(() => {
+  if (username) {
+    // ...
+  }
+}, [username])
+```
+
+At first, there might not seem to really be any point in making this change. Sure, it saved you a couple characters... but if you look a little closer, there's something far more exciting going on. Do you know what it is? Have a little think about this before checking the box below.
+
+<Doc.Spoiler>
+
+Actually, there are two exciting things going on here!
+
+First, there's the fact that the number of validations is cut in half -- you can confirm this by opening up the console in both of the above examples. This is because the effect is now only being run when the username has changed -- as opposed to running when it differs to the *last received username*. It gives you a better result, despite using less code. Which brings me to the second exciting thing.
+
+While the condition in the first snippet references *two* variables: `username`, and `availability.username`, the second snippet *only needs the `username`*. By using the dependencies array, you've eliminated the need for an extra piece of state!
+
+</Doc.Spoiler>
+
+The key feature of `useEffect()` is that it lets you specify not just *what* effect to run, but also *when* that effect should occur -- and it lets you do this declaratively, without relying on component state at all! In fact, it actually takes this one step further: it lets you declare how the effect should *end*.
 
 
 The cleanup function
 --------------------
 
-When your `useEffect()` callback returns a function, React will call that function once the effect is no longer needed. This lets you clean up after your effects by cancelling subscriptions, freeing resources, cancelling timeouts, etc.
+When you return a function from your `useEffect()` callback, React will call that function when the effect should no longer have any... effect. <small><em>lol, sorry not sorry.</em></small>
 
 <Doc.AsideTop>
 
 ```js
-useEffect(() => {
-  // do something
+useEffect(
+  () => {
+    // do stuff after specified updates
 
-  return () => {
-    // clean up
-  }
-})
+    return () => {
+      // finish doing stuff
+    }
+  },
+  [executeWhenThisChanges, orWhenThisChanges]
+)
 ```
 
 <Doc.Beware aside title="Effects and async">
@@ -184,169 +390,258 @@ The `useEffect()` hook does *not* allow you to pass in async callbacks. And when
 </Doc.Beware>
 </Doc.AsideTop>
 
-There are *two* situations in which React will call the cleanup function. Do you know what they are? Have a think about it, and when you're ready, check your answer below.
+This function is often called the **cleanup function**, and there are *two* situations in which React will call it. Do you know what they are? Have a think about it, and when you're ready, check your answer below.
 
 <Doc.Spoiler>
 
-1. The cleanup function will be called when the component is unmounted.
-2. The cleanup function will be called the *next time* the effect callback is run.
+The cleanup function will be called:
+
+1. When the component is unmounted
+2. On the *next time* that the effect callback is run
 
 </Doc.Spoiler>
 
-The first of these situations is hopefully fairly obvious. But what about the second situation? *This is what makes the hook cleanup function so powerful.* It lets you declare to React:
+The first of these situations is hopefully fairly obvious. But what about the second situation? *This is what makes the effect hook so powerful.* It lets you declare to React:
 
-*Yo React, I want this thing to happen soon after each render,* ***but only until the next render.***
+*Yo React, I want this thing to happen, but only* until *the next time it happens (or until it no longer* can *happen).*
 
-Or for a more specific example, maybe you want a timeout to be scheduled for 500ms in the future, but you want to cancel it if another timeout is scheduled *before* 500ms passes. Here's how you'd do it:
+The cleanup function is particularly important when dealing with data subscriptions -- I'll cover more on this in the routing section of [React, Firebase & Bacon](/bacon). For the moment though, let's jump back to where we started: the animated tree.
+
+In order to smooth out the tree's animation, all you need to do is finish off the effect in the demo below. The thing is, there are actually *two* approaches that you can take. Do you know what they are? If so, try them out in the editor -- and then check below to find out which one works best.
 
 ```js
 //---
-persistenceKey: blog-useEffect-cleanup
-//--- index.js
+persistenceKey: effects-smooth-animated-tree
+//--- App.js
 import React, { useEffect, useState } from 'react'
-import ReactDOM from 'react-dom'
-import validate from './validate' 
+import FractalTreeFrame from './FractalTreeFrame'
 
-function App() {
-  let [username, setUsername] = useState('')
-  let [validationMessage, setValidationMessage] = useState()
+// The height and width of the entire window
+const { innerHeight, innerWidth } = window
+
+export default function App() {
+  const [time, setTime] = useState(Date.now())
+  const [mousePosition, setMousePosition] = useState({
+    x: innerWidth / 2,
+    y: innerHeight / 2,
+  })
+
+  // useEffect(() => {
+  //   window.requestAnimationFrame(() => {
+  //     // Update time to trigger a re-render
+  //     setTime(Date.now())
+  //   })
+  // })
+
+  return (
+    <FractalTreeFrame
+      mousePosition={mousePosition}
+      onMouseMove={({ clientX: x, clientY: y }) =>
+        setMousePosition({ x, y })
+      }
+      time={time}
+    />
+  )
+}
+//--- solution:App.js
+import React, { useEffect, useState } from 'react'
+import FractalTreeFrame from './FractalTreeFrame'
+
+// The height and width of the entire window
+const { innerHeight, innerWidth } = window
+
+export default function App() {
+  const [time, setTime] = useState(Date.now())
+  const [mousePosition, setMousePosition] = useState({
+    x: innerWidth / 2,
+    y: innerHeight / 2,
+  })
 
   useEffect(() => {
-    let timeout = setTimeout(() => {
-      validate(username).then(
-        message => setValidationMessage(message)
-      )
-    }, 500)
+    const frame = window.requestAnimationFrame(() => {
+      // Update time to trigger a re-render
+      setTime(Date.now())
+    })
     return () => {
-      clearTimeout(timeout)
+      window.cancelAnimationFrame(frame)
     }
   })
 
   return (
-    <label>
-      <span className="label">Username</span>
-      <input
-        value={username}
-        onChange={event => setUsername(event.target.value)}
-      />
-      {validationMessage || ''}
-    </label>
+    <FractalTreeFrame
+      mousePosition={mousePosition}
+      onMouseMove={({ clientX: x, clientY: y }) =>
+        setMousePosition({ x, y })
+      }
+      time={time}
+    />
   )
 }
-
-ReactDOM.render(<App />, document.getElementById('root'))
-//--- solution:index.js
-import React, { useEffect, useState } from 'react'
-import ReactDOM from 'react-dom'
-import validate from './validate' 
-
-function App() {
-  let [username, setUsername] = useState('')
-  let [validationMessage, setValidationMessage] = useState()
-
-  useEffect(() => {
-    let timeout = setTimeout(() => {
-      validate(username).then(
-        message => setValidationMessage(message)
-      )
-    }, 500)
-    return () => {
-      clearTimeout(timeout)
-    }
-  }, [username])
-
-  return (
-    <label>
-      <span className="label">Username</span>
-      <input
-        value={username}
-        onChange={event => setUsername(event.target.value)}
-      />
-      {validationMessage || ''}
-    </label>
-  )
-}
-
-ReactDOM.render(<App />, document.getElementById('root'))
-//--- validate.js <-- validate.js
-//--- styles.css <-- styles.css
+//--- FractalTreeFrame.js <-- FractalTree.js
+//--- FractalHelpers.js <-- FractalHelpers.js
+//--- index.js <-- index.js
 ```
 
-Simple, enough, right? But there's still something wrong. If you try typing in a username and open the console, you'll find that the number of validations is still higher than it needs to be. Do you know why? Have a think about it, and then check your reasoning below.
+Did you find both approaches?
 
 <Doc.Spoiler>
 
-In the above example, the validation is scheduled to be run *each and every* time that the component renders. And given that most renders occur due to keypresses, this *almost* makes sense. *However.* Updating the validation message also requires a render, which means that a second validation is performed immediately after the first validation completes.
+##### Approach 1: conditional effects
 
-</Doc.Spoiler>
-
-To fix this, we'll need a way to conditionally perform effects.
-
-
-Conditional effects
--------------------
-
-In the real world, it's rare that you'll want to run your effect after *each and every* update. Instead, you'll often want your effect to run only after a specific condition changes. Luckily, React makes this super easy.
-
-The `useEffect()` function allows you to specify a list of values that the effect depends on as its second argument. When you do so, it will only schedule the effect to be executed on renders where one of the values has changed from the previous render.
-
-```js
-useEffect(
-  () => {
-    // do something
-
-    return () => {
-      // clean up
-    }
-  },
-  [executeWhenThisChanges, orWhenThisChanges]
-)
-```
-
-Given that this is a pretty simple fix, let's see if you can implement it in the above example as an exercise.
-
-**Your task is to prevent a second validation from being performed after each first validation completes.**
-
-Once you've given this exercise a try, you can click the *solution* button in the above editor to compare your work with mine.
-
-<Doc.Beware title={<>Effects and <code>if</code></>}>
-
-`useEffect()` is a hook, so it must follow [the rules of hooks](https://reactjs.org/docs/hooks-rules.html). This means that **you cannot put `useEffect()` within an `if` statement**. You can still call effects conditionally with `if` statements though -- you'll just have to put them *inside* the `useEffect()` callback:
+Given that `time` is only updated within `requestAnimationFrame`, you can limit the number of renders by adding `time` as a dependency.
 
 ```js
 useEffect(() => {
-  if (condition) {
-    // do something
+  window.requestAnimationFrame(() => {
+    setTime(Date.now())
+  })
+}, [time])
+```
+
+So long as the tree is the top level component, this approach works fine and dandy. Be careful, though -- if this component is *not* at the top level and is then *unmounted* inside a running application, it would cause a warning, as `setTime` would still be called after unmount.
+
+
+##### Approach 2: cleanup function
+
+By calling [cancelAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/cancelAnimationFrame) in the cleanup function, you'll ensure that any scheduled updates are cancelled when you move the mouse.
+
+```js
+useEffect(() => {
+  const frame = window.requestAnimationFrame(() => {
+    setTime(Date.now())
+  })
+  return () => {
+    window.cancelAnimationFrame(frame)
   }
 })
 ```
 
-</Doc.Beware>
+I'd recommend taking this approach, for two reasons:
 
+1. It'll work just as well if you decide to update `time` elsewhere
+2. It'll work just as well if the component is mounted elsewhere
 
-A quiz
-------
-
-Let's test your understanding with a little quiz. Imagine that you're building a contact list full of billionaires -- just like the one in [React Fundamentals (without the buzzwords)](/courses/react-fundamentals). When the app first loads, your contact list component needs to fetch the data from the server.
-
-Naturally, you'll use an effect -- but **will you need to pass the effect a dependencies array? And if so, what will its contents be?**
-
-Have a little think about this, and once you're ready, check your answer in the box below.
-
-<Doc.Spoiler>
-
-Given that you only want to fetch the data when the app first loads, the effect only needs to run once. This can be accomplished by passing an empty dependencies array. 
-
-```js
-useEffect(() => {
-  // load your data here
-}, [])
-```
-
-React will only run the effect when something inside the dependencies array changes. Given that there's nothing in there, nothing can ever change -- so the effect will only run once!
-  
 </Doc.Spoiler>
 
-*This article is based on the `useEffect()` lesson in [React Fundamentals (without the buzzwords)](/courses/react-fundamentals). If you'll benefit from a deeper understanding of React, then there's no other way to learn about Elements, Hooks, JSX and Create React App with fractals, billionaires and live exercises. I think you'll love it! 🤓*
 
-**[Check out the React Fundamentals course &raquo;](/courses/react-fundamentals)**
+## The three rules
+
+Phew, that was a lot of info on effects! It's okay if you didn't take it all in -- as you keep using effects in your day-to-day (or in my [React, Firebase & Bacon](/course) course), you'll gradually build intuition for them. But to start with? All you need to remember is these three rules:
+
+1. `useEffect()` schedules an update *after* the DOM has been updated
+2. By passing a dependencies array, that updated will only occur if a dependency has changed
+3. If you return a cleanup function, it'll be called when the effect should should no longer apply
+
+Got these three rules in mind? Good. Let's see if we can't put 'em all into practice with an exercise.
+
+
+## Exercise: debounce the username form
+
+If you take a look at the console for this example, you'll see that as you type, a separate validation request is made for *each and every* keystroke. Given that at some level you're going to be charged per request... well, if your app grows large enough, a little debounce could save a lot of bacon.
+
+But what do I mean by debouncing? Simple: instead of validating each and every keystroke, you'll want to delay validation until the user has stopped typing for a short period. Roughly speaking, here's how to achieve this:
+
+1. When the user updates the input, you'll use [setTimeout()](https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout) to schedule a validation to occur a few hundred milliseconds in the future.
+2. If the user updates the input *again* before the previously scheduled validation has occurred, then cancel it with [clearTimeout()](https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/clearTimeout) before scheduling another one.
+
+**Your task is to debounce the username input so that validation runs no more than once every 500ms.**
+
+You can check your work by opening up the console, and watching how many requests are made as you type. Then, once you're happy with your work (or if you're stuck but you've given the exercise a solid try), compare your work with my solution by clicking the *solution* button at the bottom left.
+
+```js
+//---
+persistenceKey: effects-debounce
+rightPanel: console
+//--- App.js
+import React, { useEffect, useState } from 'react'
+import getUsernameAvailability from './getUsernameAvailability'
+
+export default function App() {
+  const [username, setUsername] = useState('')
+  const [availability, setAvailability] = useState({})
+
+  useEffect(() => {
+    if (username) {
+      getUsernameAvailability(username).then(
+        isAvailable => setAvailability({ username, isAvailable })
+      )
+    }
+  }, [username])
+
+  return (
+    <div className="nametag">
+      <h2>Hello</h2>
+      <label>
+        <p>my username is</p>
+        <div className="field">
+          <span className="at">@</span>
+          <input
+            value={username}
+            onChange={event => setUsername(event.target.value)}
+          />
+          <span className="icon">
+            {username && availability.username === username && (
+              availability.isAvailable ? "✔️" : "❌"
+            )}
+          </span>
+        </div>
+      </label>
+    </div>
+  )
+}
+//--- solution:App.js
+import React, { useEffect, useState } from 'react'
+import getUsernameAvailability from './getUsernameAvailability'
+
+export default function App() {
+  const [username, setUsername] = useState('')
+  const [availability, setAvailability] = useState({})
+
+  useEffect(() => {
+    if (username) {
+      // If there's a username to validate, schedule validation for
+      // 500ms in the future.
+      let timeout = setTimeout(() => {
+        getUsernameAvailability(username).then(
+          isAvailable => setAvailability({ username, isAvailable })
+        )
+      }, 500)
+
+      return () => {
+        // If the timeout hasn't already run, then clear it, as it is
+        // no longer needed.
+        clearTimeout(timeout)
+      }
+    }
+  }, [username])
+
+  return (
+    <div className="nametag">
+      <h2>Hello</h2>
+      <label>
+        <p>my username is</p>
+        <div className="field">
+          <span className="at">@</span>
+          <input
+            value={username}
+            onChange={event => setUsername(event.target.value)}
+          />
+          <span className="icon">
+            {username && availability.username === username && (
+              availability.isAvailable ? "✔️" : "❌"
+            )}
+          </span>
+        </div>
+      </label>
+    </div>
+  )
+}
+//--- getUsernameAvailability.js <-- getUsernameAvailability.js
+//--- styles.css <-- styles.css
+//--- index.js <-- index.js
+```
+
+*This article is based on the `useEffect()` lesson in [React, Firebase & Bacon](/bacon). If you found this lesson useful, then there's plenty more demos, exercises and in-depth explanations where it came from. Check it out -- I think you'll love it! 🤓*
+
+- **[Check out the React, Firebase & Bacon course &raquo;](/bacon)**
+- **[Check out the React Fundamentals course &raquo;](/courses/react-fundamentals)**

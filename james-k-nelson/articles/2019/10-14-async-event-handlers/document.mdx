@@ -1,0 +1,50 @@
+import { Doc } from '@frontarm/doc'
+export const demoboardHelpers = {
+  'index.js': require('!raw-loader!./demo/index.js'),
+  'hooks.js': require('!raw-loader!./demo/hooks.js'),
+}
+
+* async event handlers can result in event handlers being run after the
+  component has unmounted; if using them, you'll need to use them in combination
+  with an effect
+* could do this in combination with a custom hook.
+* more coming soon.
+
+## Asynchronous event handlers
+
+<Doc.Details aside title="Prerequisites">
+
+We'll be using JavaScript's `async`/`await` syntax in this lesson. If you need to brush up, head on over to my [Mastering Asynchronous JavaScript](/courses/async-javascript) course.
+
+</Doc.Details>
+
+Imagine that you're building a <em>Vouch</em> button. You want it to call an API endpoint when the user clicks it, and you want to let the user know when the action has completed successfully.
+
+Assuming your API endpoint returns a `Promise`, implementing this is surprisingly simple: just turn the event handler into an async function and `await` the result!
+
+```jsx
+//--- App.js
+import React from 'react'
+import VouchButton from './VouchButton'
+import vouch from './vouch'
+
+function App() {
+  return (
+    <VouchButton onClick={async () => {
+      await vouch({ id: 'test' })
+      alert(`You've vouched for "test".`)
+    }}>
+      Vouch
+    </VouchButton>
+  )
+}
+
+export default App
+//--- vouch.js <-- vouch.js
+//--- VouchButton.js <-- VouchButton.js
+//--- index.js <-- index.js
+```
+
+If it surprises you that this demo works, then you're not alone -- it surprised *me* when I first saw it too! But when you think about it for a bit, it actually makes a lot of sense.
+
+As you probably know, React event handlers are just plain old functions -- and `async` functions are plain old functions too. The main difference between standard and `async` functions is that `async` functions always return a `Promise`. The thing is, React doesn't actually use the returned value anyway -- so whichever type of function you use, it all works fine and dandy.

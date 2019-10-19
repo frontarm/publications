@@ -5,7 +5,33 @@ import {
   getFractalContainerStyle,
 } from './FractalHelpers'
 
-export default function FractalTreeBranch(props) {
+export default function FractalTree({ mousePosition, size=150, time, ...rest }) {
+  let fromHorizontalCenter = (innerWidth / 2 - mousePosition.x) / innerWidth
+  let fromVerticalCenter = (innerHeight / 2 - mousePosition.y) / innerHeight
+  let lean = 0.03 * Math.sin(time / 2000) + fromHorizontalCenter / 4
+  let sprout =
+    0.3 +
+    0.05 * Math.sin(time / 1300) +
+    fromVerticalCenter / 5 -
+    0.2 * Math.abs(0.5 - fromHorizontalCenter / 2)
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+        overflow: 'hidden',
+      }}
+      {...rest}>
+      <FractalTreeBranch lean={lean} size={size} sprout={sprout} />
+    </div>
+  )
+}
+
+function FractalTreeBranch(props) {
   let {
     depth = 1,
     lean,

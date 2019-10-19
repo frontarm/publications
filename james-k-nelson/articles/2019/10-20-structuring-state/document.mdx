@@ -1,0 +1,90 @@
+import { TypeScriptHint } from '../helpers'
+import { Doc } from '@frontarm/doc'
+export const demoboardHelpers = {
+  'nametag-App.js': require('!raw-loader!./state-management-basics/App.js'),
+  'nametag-validateUsername.js': require('!raw-loader!./state-management-basics/validateUsername.js'),
+  'nametag-Input.js': require('!raw-loader!./state-management-basics/Input.js'),
+  'nametag-index.js': require('!raw-loader!./state-management-basics/index.js'),
+  'VouchButton.js': require('!raw-loader!./vouch-button-demo/VouchButton.js'),
+  'vouch.js': require('!raw-loader!./vouch-button-demo/vouch.js'),
+  'index.js': require('!raw-loader!./vouch-button-demo/index.js'),
+}
+
+Let's rewind to the exercise at the end of the previous lesson, where I asked you to add two `useStates` -- one each for `loading` and `error`. Remember how I then went on to merge them into the single `status` variable without explaining why?
+
+```js
+//--- App.js
+import React, { useState } from 'react'
+import VouchButton from './VouchButton'
+import vouch from './vouch'
+
+function App() {
+  let [status, setStatus] = useState({ type: 'ready' })
+
+  return (
+    <VouchButton
+      busy={status.type === 'busy'}
+      done={status.type === 'done'}
+      tooltip={status.type === 'error' && status.message}
+      onClick={async () => {
+        setStatus({ type: 'busy' })
+
+        try {
+          await vouch({ id: 'test' })
+          setStatus({ type: 'done' })
+        }
+        catch (error) {
+          setStatus({
+            type: 'error',
+            message: error.message || 'Something went wrong',
+          })
+        }
+      }}>
+      Vouch
+    </VouchButton>
+  )
+}
+
+export default App
+//--- vouch.js <-- vouch.js
+//--- VouchButton.js <-- VouchButton.js
+//--- index.js <-- index.js
+```
+
+With the counter example earlier on this page in mind, do you have an idea about why I merged `loading` and `error` into a single `status`? Have a think about it, and once you're ready, take a look at my reasoning in the box below.
+
+<Doc.Spoiler>
+
+As the `vouch()` function is asynchronous, calling both `setLoading()` and `setError()` after `vouch()` would result in a double render.
+
+By merging the loading and error state into a single `status` variable, it becomes possible to update the state with just a *single* render.
+
+</Doc.Spoiler>
+
+Sure, this isn't going to result in any perceivable performance benefit *right now*, but it's worth getting into good habits early, right?
+
+Incidentally, you'll see this pattern of flattened out state often enough that it's worth knowing the name for it: it's a **state machine**.
+
+You've may have heard this term before -- perhaps in college, or maybe associated with overly complex libraries and tooling. Relax though, state machines are actually an incredibly simple idea. Here's the gist:
+
+- A state machine holds all its state in a *single* variable. The state can be a string like `"busy"`, or an object like `{ type: "error", message: "Oh shit." }`.
+- A state machine must only change state in response to external events -- like user interactions, timers, or a response from the server.
+- A state machine with a given state will *always* respond to the same event in the same way.
+
+If you've built a component that follows these rules -- just like the one above? Then congratulations! You've built a state machine! Due to the rules of state machines, you'll find it far easier to reason about your component's state, and thus to ensure that your component doesn't double render -- *even when using `async` functions.*
+
+<TypeScriptHint>
+
+If you're using TypeScript, then you can define the states of a state machine using union types. For example, here's how you'd type the states from the previous demo:
+
+```typescript
+type Status =
+  | { type: 'ready' }
+  | { type: 'busy' }
+  | { type: 'error', message?: string }
+  | { type: 'complete' }
+```
+
+</TypeScriptHint>
+
+As it so happens, there's a class of state machine that is so popular within the React community that you've probably already heard of it: Redux-style **reducers**. React even provides a [useReducer()](https://reactjs.org/docs/hooks-reference.html#usereducer) hook as an alternative to `useState()`, which I'll cover in more detail in a future lesson. But first -- we have a form to finish!

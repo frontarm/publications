@@ -2,7 +2,7 @@ import * as React from 'react'
 import { createDocumentPage } from 'shared/pages/createDocumentPage'
 
 export default createDocumentPage({
-  title: "An introduction to React's useEffect() hook",
+  title: "A deep dive into React effects",
   tags: ['react', 'hooks'],
   blurb:
     <p>
@@ -12,9 +12,11 @@ export default createDocumentPage({
   headerImageURL: require('./hooks.svg'),
   socialImageURL: require('./social.png'),
 
-  pageTitle: "Introducing React's useEffect() hook",
-  socialTitle: "Introducing React's useEffect() hook, with live exercises and fractals",
+  pageTitle: "A deep dive into React effects",
+  socialTitle: "A deep dive into React effects (with live exercises)",
   metaDescription: `Learn all about React's new useEffect hook, with live exercises and fractals.`,
   
   importMDX: () => import('./document.mdx'),
+
+  updatedAt: '2019-10-19',
 })

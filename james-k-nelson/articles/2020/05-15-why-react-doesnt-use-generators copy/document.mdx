@@ -1,0 +1,74 @@
+import { Doc } from '@frontarm/doc'
+
+- Generators are pretty darn cool.
+- I've tried to make things with generators, and I'm not alone.
+- Crank.js is a popular new library using them for components.
+- But Crank.js has a problem: its components jam up.
+
+```js
+//--- index.js
+/** @jsx createElement */
+import {createElement} from "@bikeshaving/crank";
+import {renderer} from "@bikeshaving/crank/dom";
+
+function *Timer() {
+  let seconds = 0;
+  const interval = setInterval(() => {
+    seconds++;
+    this.refresh();
+  }, 1000);
+  try {
+    while (true) {
+      yield <div>Seconds: {seconds}</div>;
+    }
+  } finally {
+    clearInterval(interval);
+  }
+}
+
+renderer.render(<Timer />, document.body);
+```
+
+- What's going on here, and how is it that React manages to avoid this?
+
+## What are generators?
+
+So basically, generators are a neat way to implement Fibonacci generators in interviews
+
+  https://twitter.com/albertgao/status/1256797659207065600
+
+but let me backtrack and ask an entirely different question: what are async functions? they're functions, which output a promise to the value
+
+generators are another type of function with a special output -- they output *iterators*.
+
+  iterator interface
+
+they have a special syntax, and a special `yield` operator which outputs the next value of the iterator, and can also return something passed in via `next()`
+
+in fact, you can have async generators too, which outputs an async iterator. I won't cover the details on generators though; for that, use trusty mdn. the main thing to keep in mind, is that generators are functions which can output a sequence of values using `yield`. and this makes them perfect for defining components.
+
+
+## ui components
+
+when you think about it, components are also kinda like generators -- they output a sequence of elements.
+
+---
+
+They can store state in closures.
+
+They can output elements via yield.
+
+And unlike components, they can even await!
+
+here's what it looks like in crank.js
+
+```js
+
+```
+
+okay, so generators are a perfect fit for components. obviously, that means React has made a grave mistake by avoiding them. right?
+
+
+## why's my async component jammed up?
+
+https://twitter.com/james_k_nelson/status/1256792759534379009

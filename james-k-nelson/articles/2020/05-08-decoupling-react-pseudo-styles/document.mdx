@@ -1,0 +1,1536 @@
+import { Doc } from '@frontarm/doc'
+
+So you've built yourself a `<Button>` component, and it's a darn good button at that. It's got props to configure everything you'd ever need - the label, icon, colors, and even a loading spinner. It has beautiful styles for hover, active and focus states, and it *even* works well with screen readers.
+
+Your button component can take anything the world throws at it! And then you realize that you don't actually need a button after all. What you *really* needed was a link that *looks* like a button.
+
+Luckily, you can fix this without even resorting to copy and paste! Because after a bit of searching, you stumble across the concept of `as` props...
+
+
+## `as` props (considered harmful)
+
+When you first see an `as` prop, it can be something of an epiphany. *Props can be anything, even components!* **JSX elements can have variable types!**
+
+Here's what a simple `<Button>` with an `as` prop looks like in practice:
+
+```js
+//--- button.js
+import React from 'react'
+
+export function Button(props) {
+  const {
+    as: Component = 'button',
+    className = '',
+    icon: Icon,
+    label,
+    ...rest
+  } = props
+  
+  return (
+    <Component className={`Button ${className}`} {...rest}>
+      {Icon && <Icon />}
+      <span className="label">{label}</span>
+    </Component>
+  )
+}
+//--- App.js
+import React from 'react'
+import { Button } from './button'
+import { NextIcon, PreviousIcon } from './icons'
+
+const currentPage = parseInt(
+  window.location.search.split('?page=')[1] || 1,
+  10
+)
+
+export function App() {
+  return (
+    <main>
+      <h1>Page {currentPage}</h1>
+      <footer>
+        <Button
+          as={currentPage > 1 ? 'a' : 'button'}
+          disabled={currentPage === 1}
+          href={currentPage > 1 ? `/?page=${currentPage - 1}` : undefined}
+          icon={PreviousIcon}
+          label="Previous"
+        />
+        <Button
+          as='a'
+          href={`/?page=${currentPage + 1}`}
+          icon={NextIcon}
+          label="Next"
+        />
+      </footer>
+    </main>
+  )
+}
+//--- index.js
+import React from 'react'
+import { render } from 'react-dom'
+
+import { App } from './App'
+
+render(
+  <App />,
+  document.getElementById('root')
+)
+//--- icons.js
+import React from 'react'
+
+export const PreviousIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M15.422 7.406L10.828 12l4.594 4.594L14.016 18l-6-6 6-6z"></path>
+  </svg>
+)
+
+export const NextIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M9.984 6l6 6-6 6-1.406-1.406L13.172 12 8.578 7.406z"></path>
+  </svg>
+)
+//--- styles.css
+body {
+  background-color: #223344;
+  margin: 3rem auto;
+  text-align: center;
+}
+
+h1, button, a {
+  color: white;
+  font-family: sans-serif;
+}
+
+.Button {
+  align-items: center;
+  background-color: transparent;
+  border: 2px solid deepskyblue;
+  border-radius: 8px;
+  display: inline-flex;
+  font-size: inherit;
+  line-height: 1.4rem;
+  margin: 0 4px;
+  padding: 8px 12px 8px 4px;
+  position: relative;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease-out,
+    transform 150ms ease-out;
+}
+.Button:not([disabled]) {
+  cursor: pointer;
+}
+.Button:not([disabled]):hover {
+  border-color: white;
+}
+.Button:not([disabled]):active {
+  transform: scale(0.95);
+}
+.Button:focus {
+  outline: none;
+}
+.Button:focus::after {
+  content: ' ';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 2px;
+  bottom: 2px;
+  border: 2px solid white;    
+  border-radius: 5px;
+}
+.Button[disabled] {
+  opacity: 0.5;
+}
+.Button svg {
+  fill: currentColor;
+}
+```
+
+Make sense? If not, it's probably worth taking a look at the first few free lessons in my [React Fundamentals](/courses/react-fundamentals) course -- especially the bits on JSX and props. But to give you a two-sentence explanation: the above `<Button>` component returns an element with a variable `type`. By default, it uses the string `"button"` as its type -- but by passing an `as` prop, you can set that to `"a"`, `Link`, or anything else that strikes your fancy.
+
+If you work with React on a regular basis, you'll probably have seen `as` props in the wild. For instance, [Styled Components](https://styled-components.com/) supports them. You might also have seen them used with custom `<Button>` components, allowing them to be somewhat hackily connected up to your router of choice's `<Link>` component (and thus improving response time when clicking the links):
+
+```js
+//---
+lineCount: 20
+//--- button.js
+import React from 'react'
+import styled from 'styled-components'
+
+export const Button = styled.button`
+  align-items: center;
+  background-color: transparent;
+  border: 2px solid deepskyblue;
+  border-radius: 8px;
+  color: white;
+  display: inline-flex;
+  font-family: sans-serif;
+  font-size: inherit;
+  line-height: 1.4rem;
+  margin: 0 4px;
+  padding: 8px 12px 8px 4px;
+  position: relative;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease-out,
+    transform 150ms ease-out;
+
+  &:not([disabled]) {
+    cursor: pointer;
+  }
+  &:not([disabled]):hover {
+    border-color: white;
+  }
+  &:not([disabled]):active {
+    transform: scale(0.95);
+  }
+  &:focus {
+    outline: none;
+  }
+  &:focus::after {
+    content: ' ';
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    top: 2px;
+    bottom: 2px;
+    border: 2px solid white;    
+    border-radius: 5px;
+  }
+  &[disabled] {
+    opacity: 0.5;
+  }
+}
+`
+//--- page.js
+import { route } from 'navi'
+import React from 'react'
+import { Link } from 'react-navi'
+
+import { Button } from './button'
+import { NextIcon, PreviousIcon } from './icons'
+
+function Page({ number }) {
+  return (
+    <main>
+      <h1>Page {number}</h1>
+      <footer>
+        <Button
+          as={number > 1 ? Link : 'button'}
+          disabled={number === 1}
+          href={number > 1 ? `/${number - 1}` : undefined}>
+          <PreviousIcon /> Previous
+        </Button>
+        <Button
+          as={Link}
+          href={`/${number + 1}`}>
+          <NextIcon /> Next
+        </Button>
+      </footer>
+    </main>
+  )
+}
+
+export default route({
+  getView: ({ params }) => <Page number={parseInt(params.number, 10)} />
+})
+//--- index.js
+import { mount, redirect } from 'navi'
+import React from 'react'
+import { render } from 'react-dom'
+import { Router } from 'react-navi'
+
+import pageRoute from './page'
+
+render(
+  <Router routes={mount({
+    '/': redirect('/1'),
+    '/:number': pageRoute
+  })} />,
+  document.getElementById('root')
+)
+//--- icons.js
+import React from 'react'
+
+export const PreviousIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M15.422 7.406L10.828 12l4.594 4.594L14.016 18l-6-6 6-6z"></path>
+  </svg>
+)
+
+export const NextIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M9.984 6l6 6-6 6-1.406-1.406L13.172 12 8.578 7.406z"></path>
+  </svg>
+)
+//--- globalStyles.css
+body {
+  background-color: #223344;
+  margin: 3rem auto;
+  text-align: center;
+}
+
+h1 {
+  color: white;
+  font-family: sans-serif;
+}
+
+svg {
+  fill: currentColor;
+}
+```
+
+You saw me make up the word *hackily*, so now you're thinking -- *what's so hackily about this?* Well, assuming you don't want well-typed components (hint: you *do* want well-typed components), I guess it does kinda work in this particular case.
+
+But let me throw you a new requirement.
+
+
+## Active margins
+
+So you've got a button, and it's got beautiful, animated hover styles. You nudge your mouse over the button, and it lights up like a christmas tree.
+
+```js
+//---
+lineCount: 20
+//--- button.js
+import React from 'react'
+import styled, { keyframes } from 'styled-components'
+
+const rotate = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  
+  100% {
+    transform: rotate(360deg);
+  }
+`
+
+export const Button = styled.button`
+  align-items: center;
+  background-color: #223344;
+  box-sizing: border-box;
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  border-top-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  font-family: sans-serif;
+  font-size: inherit;
+  justify-content: center;
+  height: 40px;
+  width: 100px;
+  outline: none;
+  overflow: hidden;
+  padding: 2px;
+  position: relative;
+  transition: background-color 150ms ease-out, padding 150ms ease-out;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    z-index: -1;
+    margin: -40px;
+    border-radius: inherit;
+    background: linear-gradient(45deg, deepskyblue, fuchsia);
+  }
+  
+  &:hover {
+    background-color: #223344CC;
+  }
+  
+  &:hover::before {
+    background: linear-gradient(200deg, red, lightgreen) !important;
+    animation: ${rotate} 2s linear infinite;
+  }
+  
+  &:active {
+    padding: 4px;
+  }
+  &:focus::after {
+    content: ' ';
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    top: 5px;
+    bottom: 5px;
+    border: 1px dotted rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
+  }
+}
+`
+//--- index.js
+import React from 'react'
+import { render } from 'react-dom'
+
+import { Button } from './button'
+
+render(
+  <Button>Hover me</Button>,
+  document.getElementById('root')
+)
+//--- globalStyles.css
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+}
+
+#root {
+  background-color: #223344;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+  position: relative;
+}
+```
+
+In fact, this button is looking so darn pneumatic that why wouldn't we want a whole bar full of them?
+
+```js
+//---
+lineCount: 20
+//--- App.js
+import React from 'react'
+import styled, { keyframes } from 'styled-components'
+
+import { Button } from './button'
+import { PreviousIcon, NextIcon, RefreshIcon } from './icons'
+
+export function App() {
+  return (
+    <Bar>
+      <Button><PreviousIcon /></Button>
+      <Button><NextIcon /></Button>
+      <Button><RefreshIcon width={18} height={18} /></Button>
+    </Bar>
+  )
+}
+
+const Bar = styled.div`
+  background-color: #223344;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  height: 58px;
+  padding: 8px;
+  width: 150px;
+  z-index: 0;
+  
+  > * {
+    flex: 1;
+  }
+`
+//--- button.js
+import React from 'react'
+import styled, { keyframes } from 'styled-components'
+
+const rotate = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  
+  100% {
+    transform: rotate(360deg);
+  }
+`
+
+export const Button = styled.button`
+  align-items: center;
+  background-color: #223344;
+  box-sizing: border-box;
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  border-top-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  font-family: sans-serif;
+  font-size: inherit;
+  justify-content: center;
+  margin: 5px;
+  outline: none;
+  overflow: hidden;
+  padding: 2px;
+  position: relative;
+  transition: background-color 150ms ease-out;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    z-index: -1;
+    margin: -10px;
+    border-radius: inherit;
+    background-image: linear-gradient(45deg, deepskyblue, fuchsia);
+    transition: opacity 100ms ease-out;
+  }
+  
+  &:hover {
+    background-color: #223344CC;
+  }
+  
+  &:hover::before {
+    background-image: linear-gradient(200deg, red, lightgreen);
+    animation: ${rotate} 2s linear infinite;
+  }
+  
+  &:active::before {
+    opacity: 0.5;
+  }
+  &:focus::after {
+    content: ' ';
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    top: 5px;
+    bottom: 5px;
+    border: 1px dotted rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
+  }
+}
+`
+//--- index.js
+import React from 'react'
+import { render } from 'react-dom'
+
+import { App } from './App'
+
+render(
+  <App />,
+  document.getElementById('root')
+)
+//--- icons.js
+import React from 'react'
+
+export const PreviousIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M15.422 7.406L10.828 12l4.594 4.594L14.016 18l-6-6 6-6z"></path>
+  </svg>
+)
+
+export const NextIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M9.984 6l6 6-6 6-1.406-1.406L13.172 12 8.578 7.406z"></path>
+  </svg>
+)
+
+export const RefreshIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M17.672 6.328l2.344-2.344v7.031h-7.031l3.234-3.234C15.141 6.703 13.641 6 12 6c-3.328 0-6 2.672-6 6s2.672 6 6 6c2.625 0 4.875-1.641 5.672-3.984h2.063c-.891 3.469-3.984 6-7.734 6-4.406 0-7.969-3.609-7.969-8.016s3.563-8.016 7.969-8.016a8.01 8.01 0 015.672 2.344z"></path>
+  </svg>
+)
+//--- globalStyles.css
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+}
+
+#root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+  position: relative;
+}
+
+svg {
+  fill: currentColor;
+}
+```
+
+Beautiful. There's just one problem. When your boss comes along and tests everything on a tiny phone after you've been happily developing it on your vintage 2013 15" Macbook Pro and what a beautiful machine it is... well anyway, your boss doesn't like the fact that he had to press the button 3 or 4 times to finally hit the target. **The touch targets are too small.** And by golly gosh, he *shouldn't* be happy about that -- it's awful for user experience.
+
+Those margins around the buttons? They need to be *active*. Despite being outside of the button *body*, they still need to be part of the button *control*. But it's not like you can just add `margin` or `padding` to your `<Button>` element -- margins are inactive, and padding is internal.
+
+Here's the problem: your styles and behavior are all defined on one big, monolithic `<Button>` component. And while `as` props let you modify the behavior of that styled component, what you *really* want is *two separate components*: one which handles behaviors, and a *separate* one to handle the styles.
+
+
+## The solution: Control Components
+
+You know how when you render a `<button>` or an `<a>`, by default, the browser applies a bunch of styles to make them look like buttons and links?
+
+```js
+//--- index.html
+<p>
+  <button>A vanilla HTML button</button>
+</p>
+<p>
+  <a href="#">Followed by a vanilla HTML link</a>
+</p>
+```
+
+My thesis is: **in the React world, the browser`s default styles are just getting in the way**. It'd make far more sense for components like `<button>` and `<a>` to be unstyled wrappers, with the button styles rendered as children.
+
+So instead of:
+
+```jsx
+<Button as={Link} href='/' style={{ margin: 8 }}>
+  Home
+</Button>
+```
+
+You want:
+
+```jsx
+<UnstyledLinkControl href='/'>
+  <ButtonBody style={{ margin: 8 }}>
+    Home
+  </ButtonBody>
+</UnstyledLinkControl>
+```
+
+Looks simple enough, right? But there's a trick: the hover styles for `<ButtonBody>` need to be activated when the mouse hovers over `<LinkControl>`. Or `<AControl>`. Or `<ButtonControl>`. Or *any other control*.
+
+As it happens, there are three ways to achieve this: the naive way, the clunky way, and the best way. Let's take a look at each.
+
+
+## Styled component selectors
+
+One of the less-known features of the Styled Components library, is that it lets you [use your styled components themselves as selectors](https://styled-components.com/docs/advanced#referring-to-other-components). Combined with nested styles and the `&` selector, this means that **components can declare styles that'll only apply when a parent is being hovered over** -- as in the above example.
+
+For example, here's how you'd add hover styles for `<ButtonBody>` that activate when the mouse hovers over an `<AControl>` *or* a `<ButtonControl>`:
+
+```jsx
+export const AControl = styled.a`
+  /* ... reset styles ... */
+`
+export const ButtonControl = styled.a`
+  /* ... reset styles ... */
+`
+
+export const ButtonBody = styled.span`
+  background-color: #223344;
+
+  ${AControl}:hover &, ${ButtonControl}:hover & {
+    background-color: #223344CC;
+  }
+`
+```
+
+Here's the full example:
+
+```js
+//--- App.js
+import React from 'react'
+import styled, { keyframes } from 'styled-components'
+
+import { AControl, ButtonBody, ButtonControl } from './control'
+import { PreviousIcon, NextIcon, RefreshIcon } from './icons'
+
+const currentPage = parseInt(
+  window.location.search.split('?page=')[1] || 1,
+  10
+)
+
+export function App() {
+  return (
+    <>
+      <Bar>
+        <AControl
+          disabled={currentPage === 1}
+          href={currentPage > 1 ? `/?page=${currentPage - 1}` : undefined}
+          onClick={currentPage === 1 ? (event) => event.preventDefault() : undefined}>
+          <ButtonBody>
+            <PreviousIcon />
+          </ButtonBody>
+        </AControl>
+        <AControl href={`/?page=${currentPage + 1}`}>
+          <ButtonBody>
+            <NextIcon />
+          </ButtonBody>
+        </AControl>
+        <ButtonControl onClick={() => alert('refresh!')}>
+          <ButtonBody>
+            <RefreshIcon width={18} height={18} />
+          </ButtonBody>
+        </ButtonControl>
+      </Bar>
+      <h1>Page {currentPage}</h1>
+    </>
+  )
+}
+
+const Bar = styled.div`
+  background-color: #223344;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  height: 58px;
+  padding: 0 8px;
+  width: 150px;
+  z-index: 0;
+  
+  > * {
+    flex: 1;
+  }
+`
+//--- control.js
+import React from 'react'
+import styled, { keyframes } from 'styled-components'
+
+const rotate = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  
+  100% {
+    transform: rotate(360deg);
+  }
+`
+
+export const AControl = styled.a`
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+
+  appearance: none;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+  text-decoration: none;
+`
+
+export const ButtonControl = styled.button`
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  justify-content: stretch;
+
+  appearance: none;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+
+  background-color: transparent;
+  border-radius: 0;
+  border-width: 0;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  height: auto;
+  padding: 0;
+  outline: none;
+`
+
+export const ButtonBody = styled.span`
+  align-items: center;
+  background-color: #223344;
+  box-sizing: border-box;
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  border-top-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  font-family: sans-serif;
+  font-size: inherit;
+  justify-content: center;
+  margin: 12px 4px;
+  outline: none;
+  overflow: hidden;
+  padding: 2px;
+  position: relative;
+  transition: background-color 150ms ease-out;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    z-index: -1;
+    margin: -10px;
+    border-radius: inherit;
+    background-image: linear-gradient(45deg, deepskyblue, fuchsia);
+    transition: opacity 100ms ease-out;
+  }
+
+  ${AControl}[disabled] &::before, ${ButtonControl}[disabled] &::before {
+    opacity: 0.5;
+  }
+  
+  ${AControl}:hover &, ${ButtonControl}:hover & {
+    background-color: #223344CC;
+
+    &::before {
+      background-image: linear-gradient(200deg, red, lightgreen);
+      animation: ${rotate} 2s linear infinite;
+    }
+  }
+
+  ${AControl}:active &::before, ${ButtonControl}:active &::before {
+    opacity: 0.5;
+  }
+
+  ${AControl}:focus &::after, ${ButtonControl}:focus &::after {
+    content: ' ';
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    top: 5px;
+    bottom: 5px;
+    border: 1px dotted rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
+  }
+}
+`
+//--- index.js
+import React from 'react'
+import { render } from 'react-dom'
+
+import { App } from './App'
+
+render(
+  <App />,
+  document.getElementById('root')
+)
+//--- icons.js
+import React from 'react'
+
+export const PreviousIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M15.422 7.406L10.828 12l4.594 4.594L14.016 18l-6-6 6-6z"></path>
+  </svg>
+)
+
+export const NextIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M9.984 6l6 6-6 6-1.406-1.406L13.172 12 8.578 7.406z"></path>
+  </svg>
+)
+
+export const RefreshIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M17.672 6.328l2.344-2.344v7.031h-7.031l3.234-3.234C15.141 6.703 13.641 6 12 6c-3.328 0-6 2.672-6 6s2.672 6 6 6c2.625 0 4.875-1.641 5.672-3.984h2.063c-.891 3.469-3.984 6-7.734 6-4.406 0-7.969-3.609-7.969-8.016s3.563-8.016 7.969-8.016a8.01 8.01 0 015.672 2.344z"></path>
+  </svg>
+)
+//--- globalStyles.css
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  z-index: 0;
+  position: relative;
+  padding: 1rem;
+}
+
+svg {
+  fill: currentColor;
+}
+
+h1 {
+  font-family: sans-serif;
+}
+```
+
+If you try hovering over the buttons on this version of the toolbar, you'll see that the margins are now *active*; they cause the inner button's hover styles to be activated! Of course, this approach doesn't *really* solve the problem, because the `<ButtonBody>` component still needs to explicitly specify each and every control that it can be used with; it's *tightly coupled*.
+
+For example, the above `<ButtonBody>` component only works with standard `<a>` tags -- it *doesn't* work with `<Link>` components from your favorite routing library. And while you *could* fix this by creating a `<LinkControl>` component and adding it to the css for `<ButtonBody>`, it turns out there's a better way...
+
+
+## Control Context
+
+One of the neat things about Styled Components it allows your styles to reference a `theme` object. This is often used to set colors based on a global theme:
+
+```js
+const Button = styled.button`
+  background-color: ${props => props.theme.buttonBackgroundColor};
+`
+```
+
+As it happens, Styled Components also lets individual components merge *new* values into that `theme` object, which will apply only for that component's children.
+
+<Doc.AsideTop>
+
+```jsx
+export const ButtonControl = () => {
+  const theme = useContext(ThemeContext)
+  const patchedTheme = {
+    ...theme,
+    // ... merged values
+  }
+
+  return (
+    <ThemeContext.Provider value={patchedTheme}>
+      ...
+    </ThemeContext.Provider>
+  )
+}
+```
+
+<Doc.Details aside>
+
+For a real-world implementation, you'll want to memoize the patched theme to prevent render thrashing.
+
+</Doc.Details>
+</Doc.AsideTop>
+
+By feeding the Control Component's *styled component* into context, it becomes possible for child components to create selectors that are *specific to whatever control they're being used in*.
+
+For example, here's the `:hover` example from before, with the `:hover` selector being applied to whatever component has been added to the `parentStyledComponent` property of the theme object:
+
+```js
+export const ButtonBody = styled.span`
+  background-color: #223344;
+
+  ${({ theme }) => theme.parentStyledControl}:hover & {
+    background-color: #223344CC;
+  }
+`
+```
+
+Here's a full example taking this approach -- I've even connected it up to [Navi](https://frontarm.com/navi/)'s `<Link>` component for good measure!
+
+```js
+//--- page.js
+import { route } from 'navi'
+import React from 'react'
+import styled, { keyframes } from 'styled-components'
+
+import { ButtonBody, ButtonControl, LinkControl } from './control'
+import { PreviousIcon, NextIcon, RefreshIcon } from './icons'
+
+export function Page({ currentPage }) {
+  return (
+    <>
+      <Bar>
+        <LinkControl
+          disabled={currentPage === 1}
+          href={currentPage > 1 ? `/${currentPage - 1}` : undefined}
+          onClick={currentPage === 1 ? (event) => event.preventDefault() : undefined}>
+          <ButtonBody>
+            <PreviousIcon />
+          </ButtonBody>
+        </LinkControl>
+        <LinkControl href={`/${currentPage + 1}`}>
+          <ButtonBody>
+            <NextIcon />
+          </ButtonBody>
+        </LinkControl>
+        <ButtonControl onClick={() => alert('refresh!')}>
+          <ButtonBody>
+            <RefreshIcon width={18} height={18} />
+          </ButtonBody>
+        </ButtonControl>
+      </Bar>
+      <h1>Page {currentPage}</h1>
+    </>
+  )
+}
+
+const Bar = styled.div`
+  background-color: #223344;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  height: 58px;
+  padding: 0 8px;
+  width: 150px;
+  z-index: 0;
+  
+  > * {
+    flex: 1;
+  }
+`
+
+export default route({
+  getView: ({ params }) => <Page currentPage={parseInt(params.number, 10)} />
+})
+//--- control.js
+import React, { useContext, useMemo } from 'react'
+import { Link } from 'react-navi'
+import styled, { ThemeContext, keyframes } from 'styled-components'
+
+const rotate = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  
+  100% {
+    transform: rotate(360deg);
+  }
+`
+
+export const StyledLinkControl = styled(Link)`
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+
+  appearance: none;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+  text-decoration: none;
+`
+
+export const LinkControl = React.forwardRef((props, ref) => {
+  const theme = useContext(ThemeContext)
+  const patchedTheme = useMemo(() => ({
+    ...theme,
+    parentStyledControl: StyledLinkControl,
+  }), [theme])
+
+  return (
+    <ThemeContext.Provider value={patchedTheme}>
+      <StyledLinkControl {...props} ref={ref} />
+    </ThemeContext.Provider>
+  )
+})
+
+export const StyledButtonControl = styled.button`
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  justify-content: stretch;
+
+  appearance: none;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+
+  background-color: transparent;
+  border-radius: 0;
+  border-width: 0;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  height: auto;
+  padding: 0;
+  outline: none;
+`
+
+export const ButtonControl = React.forwardRef((props, ref) => {
+  const theme = useContext(ThemeContext)
+  const patchedTheme = useMemo(() => ({
+    ...theme,
+    parentStyledControl: StyledButtonControl,
+  }), [theme])
+
+  return (
+    <ThemeContext.Provider value={patchedTheme}>
+      <StyledButtonControl {...props} ref={ref} />
+    </ThemeContext.Provider>
+  )
+})
+
+const ParentControl = ({ theme }) => theme.parentStyledControl
+
+export const ButtonBody = styled.span`
+  align-items: center;
+  background-color: #223344;
+  box-sizing: border-box;
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  border-top-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  font-family: sans-serif;
+  font-size: inherit;
+  justify-content: center;
+  margin: 12px 4px;
+  outline: none;
+  overflow: hidden;
+  padding: 2px;
+  position: relative;
+  transition: background-color 150ms ease-out;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    z-index: -1;
+    margin: -10px;
+    border-radius: inherit;
+    background-image: linear-gradient(45deg, deepskyblue, fuchsia);
+    transition: opacity 100ms ease-out;
+  }
+
+  ${ParentControl}[disabled] &::before {
+    opacity: 0.5;
+  }
+  
+  ${ParentControl}:hover & {
+    background-color: #223344CC;
+
+    &::before {
+      background-image: linear-gradient(200deg, red, lightgreen);
+      animation: ${rotate} 2s linear infinite;
+    }
+  }
+
+  ${ParentControl}:active &::before {
+    opacity: 0.5;
+  }
+
+  ${ParentControl}:focus &::after {
+    content: ' ';
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    top: 5px;
+    bottom: 5px;
+    border: 1px dotted rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
+  }
+}
+`
+//--- index.js
+import { mount, redirect } from 'navi'
+import React from 'react'
+import { render } from 'react-dom'
+import { Router } from 'react-navi'
+
+import pageRoute from './page'
+
+render(
+  <Router routes={mount({
+    '/': redirect('/1'),
+    '/:number': pageRoute
+  })} />,
+  document.getElementById('root')
+)
+//--- icons.js
+import React from 'react'
+
+export const PreviousIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M15.422 7.406L10.828 12l4.594 4.594L14.016 18l-6-6 6-6z"></path>
+  </svg>
+)
+
+export const NextIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M9.984 6l6 6-6 6-1.406-1.406L13.172 12 8.578 7.406z"></path>
+  </svg>
+)
+
+export const RefreshIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M17.672 6.328l2.344-2.344v7.031h-7.031l3.234-3.234C15.141 6.703 13.641 6 12 6c-3.328 0-6 2.672-6 6s2.672 6 6 6c2.625 0 4.875-1.641 5.672-3.984h2.063c-.891 3.469-3.984 6-7.734 6-4.406 0-7.969-3.609-7.969-8.016s3.563-8.016 7.969-8.016a8.01 8.01 0 015.672 2.344z"></path>
+  </svg>
+)
+//--- globalStyles.css
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  z-index: 0;
+  position: relative;
+  padding: 1rem;
+}
+
+svg {
+  fill: currentColor;
+}
+
+h1 {
+  font-family: sans-serif;
+}
+```
+
+You can see how this pattern opens up a whole new world of possibilities... but you can also see how manually fiddling with context, nested selectors and default styles can get old fast. And that's why there's now a package for that!
+
+
+## React Utilities for Controls
+
+The `@retil/control` package exports everything you need to start using control components, including:
+
+- `<AControl>` and `<ButtonControl>` components for Styled Components
+- Template functions for `active`, `disabled`, `focus` and `hover` selectors, which can be used within your `styled` components and `css` template strings
+- A higher-order `control()` function that turns any Styled Component into a context-providing Control Component
+- The raw css strings used to reset the browser default styles
+
+Here's how to refactor the above example using `@retil/control`
+
+```js
+//--- control.js
+import {
+  ButtonControl,
+  active,
+  control,
+  disabled,
+  focus,
+  hover,
+  resetACSS
+} from '@retil/control'
+import React from 'react'
+import { Link } from 'react-navi'
+import styled, { keyframes } from 'styled-components'
+
+const StyledLinkControl = styled(Link)(resetACSS)
+export const LinkControl = control(StyledLinkControl)
+export { ButtonControl }
+
+const rotate = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  
+  100% {
+    transform: rotate(360deg);
+  }
+`
+
+export const ButtonBody = styled.span`
+  align-items: center;
+  background-color: #223344;
+  box-sizing: border-box;
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  border-top-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  font-family: sans-serif;
+  font-size: inherit;
+  justify-content: center;
+  margin: 12px 4px;
+  outline: none;
+  overflow: hidden;
+  padding: 2px;
+  position: relative;
+  transition: background-color 150ms ease-out;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    z-index: -1;
+    margin: -10px;
+    border-radius: inherit;
+    background-image: linear-gradient(45deg, deepskyblue, fuchsia);
+    transition: opacity 100ms ease-out;
+    animation: ${rotate} 2s linear infinite;
+    animation-play-state: paused;
+  }
+
+  ${disabled`
+    ::before {
+      opacity: 0.5;
+    }
+  `}
+  
+  ${hover`
+    background-color: #223344CC;
+
+    &::before {
+      background-image: linear-gradient(200deg, red, lightgreen);
+      animation-play-state: running;
+    }
+  `}
+
+  ${active`
+    ::before {
+      opacity: 0.5;
+    }
+  `}
+
+  ${focus`
+    ::after {
+      content: ' ';
+      position: absolute;
+      left: 5px;
+      right: 5px;
+      top: 5px;
+      bottom: 5px;
+      border: 1px dotted rgba(255, 255, 255, 0.5);
+      border-radius: 2px;
+    }
+  `}
+}
+`
+//--- page.js
+import { route } from 'navi'
+import React from 'react'
+import styled, { keyframes } from 'styled-components'
+
+import { ButtonBody, ButtonControl, LinkControl } from './control'
+import { PreviousIcon, NextIcon, RefreshIcon } from './icons'
+
+export function Page({ currentPage }) {
+  return (
+    <>
+      <Bar>
+        <LinkControl
+          disabled={currentPage === 1}
+          href={currentPage > 1 ? `/${currentPage - 1}` : undefined}
+          onClick={currentPage === 1 ? (event) => event.preventDefault() : undefined}>
+          <ButtonBody>
+            <PreviousIcon />
+          </ButtonBody>
+        </LinkControl>
+        <LinkControl href={`/${currentPage + 1}`}>
+          <ButtonBody>
+            <NextIcon />
+          </ButtonBody>
+        </LinkControl>
+        <ButtonControl onClick={() => alert('refresh!')}>
+          <ButtonBody>
+            <RefreshIcon width={18} height={18} />
+          </ButtonBody>
+        </ButtonControl>
+      </Bar>
+      <h1>Page {currentPage}</h1>
+    </>
+  )
+}
+
+const Bar = styled.div`
+  background-color: #223344;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  height: 58px;
+  padding: 0 8px;
+  width: 150px;
+  z-index: 0;
+  
+  > * {
+    flex: 1;
+  }
+`
+
+export default route({
+  getView: ({ params }) => <Page currentPage={parseInt(params.number, 10)} />
+})
+//--- index.js
+import { mount, redirect } from 'navi'
+import React from 'react'
+import { render } from 'react-dom'
+import { Router } from 'react-navi'
+
+import pageRoute from './page'
+
+render(
+  <Router routes={mount({
+    '/': redirect('/1'),
+    '/:number': pageRoute
+  })} />,
+  document.getElementById('root')
+)
+//--- icons.js
+import React from 'react'
+
+export const PreviousIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M15.422 7.406L10.828 12l4.594 4.594L14.016 18l-6-6 6-6z"></path>
+  </svg>
+)
+
+export const NextIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M9.984 6l6 6-6 6-1.406-1.406L13.172 12 8.578 7.406z"></path>
+  </svg>
+)
+
+export const RefreshIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <path d="M17.672 6.328l2.344-2.344v7.031h-7.031l3.234-3.234C15.141 6.703 13.641 6 12 6c-3.328 0-6 2.672-6 6s2.672 6 6 6c2.625 0 4.875-1.641 5.672-3.984h2.063c-.891 3.469-3.984 6-7.734 6-4.406 0-7.969-3.609-7.969-8.016s3.563-8.016 7.969-8.016a8.01 8.01 0 015.672 2.344z"></path>
+  </svg>
+)
+//--- globalStyles.css
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  z-index: 0;
+  position: relative;
+  padding: 1rem;
+}
+
+svg {
+  fill: currentColor;
+}
+
+h1 {
+  font-family: sans-serif;
+}
+```
+
+The package also exports a bunch of more advanced utilities:
+
+- A `createTemplateHelper()` function, in case the default template helpers (e.g. `hover`) don't suit your needs
+- A `useControlContext()` hook that returns the raw Control Context (internally, it's stored within your Styled Components theme)
+- `AControlProps` and `ButtonControlProps` types for TypeScript projects
+
+<!--
+
+Finally, the package exports `<Link>` components for popular routers, each from their own modules:
+
+- `import { LinkControl }` from '@retil/control/navi'
+- `import { LinkControl }` from '@retil/control/next'
+- `import { LinkControl }` from '@retil/control/react-router'
+
+-->
+
+
+## Give it a whirl
+
+I'd love to see what you build with `@retil/control`. I'd also love to show the world -- if you give it a whirl, make sure to send a [Pull Request] adding yourself to the *apps using @retil/control`* section in the README!
+
+One more thing -- I want to thank everyone who contributed to the discussion about this idea on Twitter!
+
+<Doc.Tweet tweetId="1257499618981507072" />
+
+You might be able to guess from the package name -- but `@retil/control` is the first React Utility that I'll be publishing under the "retil" brand, and there'll almost certainly be more. If *you've* got some code and you're somehow convinced that there's *gotta be a better way* of doing it, then you're in good company. [Send me a Tweet](), and let's nut out how to make a utility that can improve *everyone's* React experience.
+
+That's it for today -- happy coding! And if I don't see you on the Twitters, I'll see you at the next post!

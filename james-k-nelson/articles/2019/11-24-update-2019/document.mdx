@@ -1,0 +1,517 @@
+import { Doc } from '@frontarm/doc'
+export const demoboardHelpers = {
+  'App.js': require('!raw-loader!./welcome/App.js'),
+  'landing.js': require('!raw-loader!./welcome/landing.js'),
+  'backend.js': require('!raw-loader!./welcome/backend.js'),
+  'components.js': require('!raw-loader!./welcome/components.js'),
+  'theme.js': require('!raw-loader!./welcome/theme.js'),
+  'index.js': require('!raw-loader!./welcome/index.js'),
+}
+
+G'day there! It's been about a year since my last status update, and a *big* year at that. I've released a bunch of new lessons and code, a couple new videos, a new direction for the site, *and* a much lower price. But before talking about any of this, let's rewind to earlier this year.
+
+*React hooks were released.*
+
+Hooks promised to completely change the way you'd write React apps. Which at the time, sounded like a whole lot of work. It meant that you'd need to learn new patterns, new ways of thinking, and new libraries. Given this reality, it took some time before I was truly convinced about the merit of hooks -- but after using them in the real world for some months, you can consider me convinced. Hooks *are* pretty great.
+
+At least, hooks are great *as a developer*. As someone who'd just gone full time on Frontend Armory and spent months writing a course on React with class components, hooks were pretty bad timing for me. They're a completely different beast to class components, and I needed time to get comfortable with them before I could teach them. This left Frontend Armory in a slightly different position than I expected it would be just one year back -- so let's talk about what has changed.
+
+
+New lessons and code
+--------------------
+
+
+### React Fundamentals
+
+When I launched Frontend Armory last year, it had just one course: [React (without the buzzwords)](/courses/learn-raw-react/basics/one-file-react-app/). And then like a week later, I heard the first news about React Hooks. *Doh.*
+
+The thing about hooks is that they're *not* just a different way of writing class components -- they're a completely different way of thinking about state and effects. Basically, I needed to rewrite a large part of the course. So in 2019, that's what I did.
+
+The updated course is called [React Fundamentals](/courses/react-fundamentals/). It now:
+
+- Introduces Create React App near the beginning of the course.
+- Uses JSX for most of the examples.
+- **Teaches state and effects using hooks.**
+- Teaches you to build a fancy pancy hooks-based fractal tree that reacts to mouse movements and clicks. *Go ahead*, try it below!
+
+```js
+//--- index.js
+import React, { useEffect, useState } from 'react'
+import ReactDOM from 'react-dom'
+import FractalTreeBranch from './FractalTreeBranch'
+
+// The height and width of the entire window
+const { innerHeight, innerWidth } = window
+
+const FractalTree = () => {
+  let [time, setTime] = useState(() => Date.now())
+  let [mousePosition, setMousePosition] = useState({
+    x: innerWidth / 2,
+    y: innerHeight / 2,
+  })
+  useEffect(() => {
+    let requestId = window.requestAnimationFrame(() => {
+      setTime(Date.now())
+    })
+    return () => {
+      window.cancelAnimationFrame(requestId)
+    }
+  })
+  let fromHorizontalCenter = (innerWidth / 2 - mousePosition.x) / innerWidth
+  let fromVerticalCenter = (innerHeight / 2 - mousePosition.y) / innerHeight
+  let lean = 0.03 * Math.sin(time / 2000) + fromHorizontalCenter / 4
+  let sprout =
+    0.3 +
+    0.05 * Math.sin(time / 1300) +
+    fromVerticalCenter / 5 -
+    0.2 * Math.abs(0.5 - fromHorizontalCenter / 2)
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+        overflow: 'hidden',
+      }}
+      onMouseMove={event => {
+        setMousePosition({
+          x: event.clientX,
+          y: event.clientY,
+        })
+      }}>
+      <FractalTreeBranch lean={lean} size={150} sprout={sprout} />
+    </div>
+  )
+}
+
+ReactDOM.render(<FractalTree />, document.getElementById('root'))
+//--- FractalTreeBranch.js
+import React, { useState } from 'react'
+import {
+  getAnimatedScale,
+  getFractalBoxStyle,
+  getFractalContainerStyle,
+} from './FractalHelpers'
+
+export default function FractalTreeBranch(props) {
+  let {
+    depth = 1,
+    lean,
+    maxDepth = 7,
+    side,
+    size,
+    sprout,
+  } = props
+  
+  let [animation, setAnimation] = useState({
+    type: 'constant',
+  })
+  let scale = getAnimatedScale(
+    animation.type,
+    animation.startTime,
+    animation.startScale
+  )
+
+  // When lean/sprout are negative, scaling them can reduce
+  // the visible size, which feels kinda odd. The Math.min
+  // prevents this from occuring.
+  let scaledLean = Math.min(lean * scale, lean)
+  let scaledSprout = Math.min(sprout * scale, sprout)
+  
+  let startAnimation = (type) => setAnimation({
+    type,
+    startScale: scale,
+    startTime: Date.now(),
+  })
+
+  if (depth > maxDepth) {
+    return null
+  } else {
+    return (
+      <div style={getFractalContainerStyle({
+        depth,
+        lean,
+        maxDepth,
+        side,
+        size,
+        sprout
+      })}>
+        <div
+          style={getFractalBoxStyle(depth, maxDepth)}
+          onMouseDown={() => startAnimation('squirm')}
+          onMouseUp={() => startAnimation('shrink')}
+          onMouseEnter={() => startAnimation('shrink')}
+          onMouseLeave={() => startAnimation('grow')}
+        />
+        <FractalTreeBranch
+          depth={depth + 1}
+          lean={scaledLean}
+          side='left'
+          sprout={scaledSprout}
+          size={size}
+        />
+        <FractalTreeBranch
+          depth={depth + 1}
+          lean={scaledLean}
+          side='right'
+          sprout={scaledSprout}
+          size={size}
+        />
+      </div>
+    )
+  }
+}
+//--- FractalHelpers.js
+export function FractalHelpers(options) {
+  return {
+    ...getFractalBoxStyle(options.depth, options.maxDepth),
+    ...getFractalContainerStyle(options),
+  }
+}
+
+export function getFractalBoxStyle(depth, maxDepth) {
+  const color = interpolateColor((depth/maxDepth)**2, 80, 120, 54, 240, 104, 64)
+  
+  return {
+    backgroundColor: color,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '100%',
+    transition: 'opacity 500ms ease-out',
+    zIndex: maxDepth - depth,
+  }
+}
+
+export function getFractalContainerStyle(options) {
+  let {
+    heightFactor = 0.4,
+    sprout,
+    lean = 0,
+    size = 100,
+    
+    frozen,
+
+    depth,
+    side
+  } = options
+
+  if (sprout !== undefined) {
+    heightFactor = sprout
+  }
+
+  const scale = side === 'right'
+      ? Math.sqrt((size*heightFactor)**2 + (size * (0.5+lean))**2) / size
+      : Math.sqrt((size*heightFactor)**2 + (size * (0.5-lean))**2) / size
+  const rotation =
+    side === 'right'
+      ? Math.atan(heightFactor / (0.5+lean))
+      : -Math.atan(heightFactor / (0.5-lean))
+
+  const style = {
+    position: 'absolute',
+    bottom: 0,
+    filter: frozen ? 'grayscale(66%)' : undefined,
+    transition: 'filter 250ms ease-in-out',
+    width: size,
+    height: size,
+    transformOrigin: side === 'right' ? `${size}px ${size}px` : `0 ${size}px`,
+    transform: depth === 1 ? '' : `
+      translate3d(0, ${-size}px, 0)
+      scale3d(${scale}, ${scale}, 1)
+      rotate(${rotation}rad)
+    `,
+  }
+
+  if (depth === 1) {
+    style.left = `calc(50% - ${size/2}px)`
+  }
+
+  return style
+}
+
+function interpolateColor(x, r1, r2, g1, g2, b1, b2) {
+  const r = Math.round(clamp(x, r1, r2))
+  const g = Math.round(clamp(x, g1, g2))
+  const b = Math.round(clamp(x, b1, b2))
+  return `rgb(${r}, ${g}, ${b})`
+}
+
+function clamp(x, min, max) {
+  return min + (max - min)*x
+}
+
+// ---
+
+const DefaultShrinkAnimationDuration = 2000
+const DefaultGrowAnimationDuration = 10000
+
+function easeOut(startTime, duration) {
+  return Math.pow(
+    ((duration /
+      10 /
+      (duration / 10 + Math.min(Date.now() - startTime - 50, duration)) -
+      1 / 11) *
+      11) /
+      10,
+    1.5,
+  )
+}
+
+export function shrink(startTime, startValue, duration = DefaultShrinkAnimationDuration, toValue = -3/5) {
+  return (
+    (startValue * easeOut(startTime, duration) + toValue) *
+    (startTime / (startTime + toValue))
+  )
+}
+export function grow(startTime, startValue, duration = DefaultGrowAnimationDuration, toValue = 1) {
+  return (
+    startValue +
+    (1 - easeOut(startTime, duration)) * (toValue - startValue)
+  )
+}
+export function squirm(startTime, startValue, magnitude = 0.04) {
+  return (
+    grow(startTime, startValue, DefaultGrowAnimationDuration, 0.5) +
+    magnitude * Math.sin((startTime - Date.now()) / 13)
+  )
+}
+
+// Given we're running this every frame, it should only log warnings once
+let hasWarned = false 
+export function getAnimatedScale(animationType, startTime, startScale) {
+  if (!hasWarned && animationType !== 'constant') {
+    if (!startTime) {
+      console.error('Missing startTime.')
+      hasWarned = true
+      startTime = Date.now()
+    }
+    if (!startScale) {
+      console.error('Missing startScale.')
+      hasWarned = true
+      startScale = 1
+    }
+  }
+
+  switch (animationType) {
+    case 'grow':
+      return grow(startTime, startScale)
+    case 'shrink':
+      return shrink(startTime, startScale)
+    case 'squirm':
+      return squirm(startTime, startScale)
+    case 'constant':
+      return 1
+    default:
+      if (!hasWarned) {
+        console.error('Unknown animation type:', animationType)
+      }
+      hasWarned = true
+      return 1
+  }
+}
+```
+
+*React fundamentals* is a huge improvement on the earlier *React (without the buzzwords)* course. There's just a few outstanding issues:
+
+- It only includes [one](/courses/react-fundamentals/basics/one-file-react-app/) video. I've recorded a few other videos this year, but ran into some issues on this front -- I'll go into more detail later in the update.
+- Some of the later lessons in React Fundamentals are works in progress in that they're still based around the older *React (without the buzzwords)* course.
+
+I plan on updating the later lessons in the coming year, but for now you'll find more details on building practical apps in...
+
+
+### React, Firebase & Bacon
+
+In recent years, it's become much easier to learn advanced React features -- mostly due to the massibe imporvements in the React docs themselves. But at the same time, there are now more concepts and tools to learn, and more ways that the various pieces can fit together.
+
+As a result, while *React itself* has become easier to learn, it's also become less clear how to put it to use in real world apps. And that's where [React, Firebase & Bacon](https://frontarm.com/courses/react-and-bacon/) comes in.
+
+This **work-in-progress** course aims to be a step-by-step guide to building a real world app from the ground up. So far, it includes lessons on:
+
+- Setting up your Create React App & Firebase project
+- Fetching and submitting data
+- Working with simple forms
+- Styling your app with [styled-components](https://www.styled-components.com/), a popular CSS-in-JS library
+
+Each of these lesson covers one step in the process towards building this landing page:
+
+```jsx
+//---
+lineCount: 20
+//--- App.js <-- App.js
+//--- landing.js <-- landing.js
+//--- backend.js <-- backend.js
+//--- components.js <-- components.js
+//--- theme.js <-- theme.js
+//--- index.js <-- index.js
+```
+
+In fact, the above landing page is [open source](https://github.com/frontarm/react-firebase-bacon), with separate branches for each step -- including the ones that aren't yet covered in the course.
+
+Okay, okay but... why *bacon?*
+
+Before answering this, I need to stress that this course is currently a *work in progress*. I'll be releasing updates on a when-they're-done basis -- but the *direction* of the course is set in stone. Let me explain: once the course is complete, **it'll teach you to build a real-world app that makes bacon (money)**. The app you'll be building is called Vouch, and **Pro members already have access to a significant chunk of the source for the finished product.**
+
+
+### Vouch
+
+[Vouch](https://beta.vouch.chat) is the companion app to React, Firebase & Bacon. It's an advertising-free social network, and as with the course, it's a work in progress -- but it's a lot further along than the course content itself. It's [source](/james-k-nelson/vouch/) is exclusively available to Frontend Armory Pro members, including:
+
+- Working payments (with Stripe)
+- Server rendering (with Create Universal React App)
+- Authentication (with Firebase)
+- Onboarding flow
+- Responsive layout
+
+The main missing feature? *Posting*. Yep, it's a social network that doesn't let you post anything. There's a reason for this, though: I want Vouch to eventually be a real, useful, open-source app -- not just a demo. And to make that happen, Vouch is going to let you post JavaScript demos using the same *Demoboard* component that the course's exercises currently use. This means that Demoboard needs to be a reusable component. And as of a few weeks ago, it actually is!
+
+
+### Demoboard
+
+I'm often asked the question: *why does Frontend Armory use its own Demoboard component?* Why not just use CodeSandbox? It's a great question, and honestly, there are a lot of ways I could answer it. To start with, CodeSandbox didn't even exist when I started work on [the first version of Frontend Armory](https://reactarmory.com/guides/learn-react-by-itself/react-basics). But there's another, more important reason.
+
+CodeSandbox is designed to let you edit real world code in the browser. It's amazing at what it does, but Demoboard -- the editor that runs the fractal and landing page examples above -- does something different. It lets you quickly throw together small demos. And moreover, it lets you render a *lot* of those demos on a single page.
+
+**Demoboard is designed to be lightweight.** It loads quickly, and loads *even quicker* when you have multiple demoboards on a page (as they'll share the build worker). It's also server-renderable, speeding up the time to initial content. It also works without a server *at all* -- it can read everything it needs from a JavaScript CDN like [UNPKG](https://unpkg.com/).
+
+**As of a few weeks ago, Demoboard is now [open source](https://github.com/frontarm/demoboard).**
+
+Documentation is still to come, and the API is subject to change -- but even in its current state, you can embed Demoboards in your site or docs with a simple `yarn add @frontarm/demoboard`. You can see how to do so at [demoboard.io](https://demoboard.io) -- where the open-source demoboard project will be living from here on out.
+
+Demoboard is the engine that drives Frontend Armory, and it'll be the engine that drives Vouch too. But why Demoboard and Vouch? And why *bacon*?
+
+
+The mission
+-----------
+
+Without going into the details, I grew up in a place with a rather low socioeconomic rank. Remote work on the internet was a ladder up for me -- and it's a ladder that I want to help keep open for others. But actually, when I started Frontend Armory, I hadn't yet realized this. All I knew was that I wanted to *teach*.
+
+*But what should I teach?* The obvious thing to teach was JavaScript and React. I *know* JavaScript and React. But there's been something that's made me increasingly uncomfortable about teaching web tech just for the sake of it: *the advertising economy*. I'm not a huge fan of ads. And that's why I want to teach people to build apps without them.
+
+<Doc.AsideTop>
+
+**My mission for Frontend Armory is to teach people the skills they need to build apps that charge money.** 
+
+<Doc.Details aside>
+
+Rest assured, I understand the irony in taking this as a mission while relying on a Facebook funded product. But what am I gonna do, teach a Google funded product instead?
+
+</Doc.Details>
+</Doc.AsideTop>
+
+Each piece of new content this year has been one step towards this mission:
+
+- Demoboard helps teachers make quality material by simplifying the process of embedding exercises
+- Vouch will encourage learning [*in public*](https://www.swyx.io/writing/learn-in-public/)
+- React, Firebase & Bacon is the roadmap to get where students are going
+
+This mission has helped give better direction to Frontend Armory's content over the past few months -- and it's also resulted in another important change.
+
+
+A more accessible price
+-----------------------
+
+Pricing is hard.
+
+On one hand, for a service like Frontend Armory to be sustainable, it needs to cost money -- because I need to be able to feed and house my family. On the other hand, if the price is too high for the people that actually need it, then I'm basically just wasting my time. The price needs to be *sustainable*, but it also needs to be *accessible*.
+
+When I first launched Frontend Armory, the price was $40/month or $250/year. However, it soon became apparent that this put it out of reach for a lot of people who needed it most. To try and strike a better balance with accessibility, *I've cut Frontend Armory Pro's monthly price by more than half.*
+
+Frontend Armory Pro is now just $18/month, or $180/year.
+
+[**Join Frontend Armory Pro Now &raquo;**](/pricing/individual/#buy)
+
+
+Business and financials
+-----------------------
+
+In the interest of transparency and learning in public, here's some data from the first year of Frontend Armory:
+
+- Revenue for the first year was roughly **USD $20,000** (2,160,000 yen)
+- There have been **170** customers in total (and as far as I know, my mum *didn't* sign up to pad the numbers!)
+- Various hosting and business costs amounted to roughly **USD $3,000**
+- Which all adds up to a **huge loss** if I value my time at even half of minimum wage
+
+Let me share a few other business-related things I've learned over the first year, in no particular order:
+
+* Curating and editing content from others is hard. It takes almost as much time as writing my own content. While I'd still like to publish other authors, I first need to learn to better market my own content.
+* Extolling the virtue of my own content is mostly a waste of time. It's far more valuable to have others vouch for my product than to do so myself.
+* Surprisingly, organic traffic from google has increased significantly, even during periods where I haven't been regularly blogging... 
+* But organic traffic doesn't have a great conversion rate to paying customers.
+* GitHub stars don't pay the bills.
+* Real-life workshops *do* pay the bills, but...
+* Marketing and sales take a *whole* lot of time, which can't be spent on creating content.
+
+Initially, my plan was to create content for Frontend Armory full time -- and for the better part of a year I managed to do so. However, it turns out I still have a lot to learn about marketing and business. With this in mind, for at least the next half year, I'm aiming to spend only 2-3 days a week on Frontend Armory. I'm treating this as a bit of a time to recharge and try new things *without* the stress of a limited runway.
+
+
+What else didn't go right
+-------------------------
+
+If you've been following along since last year, you might have noticed a few things conspicuously missing from the new lessons and code.
+
+
+### Videos
+
+So far, Frontend Armory's content has mostly been text and demo based -- because in my opinion, these are usually the best mediums for building a deep understanding of a topic. But with this said, video *does* have its place. In particular, I've wanted to create video introductions for course topics, and video solutions for the more involved exercises. In fact, early on in the process of planning the React, Firebase & Bacon course, I did create a [couple](https://www.youtube.com/watch?v=hfwpcGRtyw0) [videos](https://www.youtube.com/watch?v=eTfJFuvfJrc&t=22s). Here's what I learned:
+
+* Videos take a *lot* of time to get to the quality I want.
+* Unlike text, if the content changes, I can't easily edit them; I have to start from scratch.
+* I can't take good video with two huge construction sites next door.
+
+In any case, I *have* learned a lot about video, and plan on having another go once the text for the first few parts of React, Firebase & Bacon is done -- and once the construction next door finishes (or I give up waiting and move).
+
+
+### Navi
+
+Towards the beginning of the year, I released a new version of my [Navi](/navi/) router -- with hooks, and a bunch of other neat features. Navi has come a long way, and is used in a number of production apps -- including Frontend Armory and a number of apps by other contributors.
+
+Recently though, the React team has been heading in a new direction, which makes me unsure of whether Navi has a future. React itself is gaining more and more responsibility, which makes it less and less certain that external state management solutions like Navi will continue to work well into the future. In particular, I've even seen talk of React integrating with bundlers and [the server](https://github.com/facebook/react/tree/master/packages/react-flight) itself. Due to the uncertainty this brings and my limited time, I'll be pausing work on new features, and continuing only with basic maintenance.
+
+
+### Communication
+
+If you've read this far in, then thanks for reading! And also, chances are you're someone who might have noticed that I haven't been hugely communicative over the past year.
+
+There are a number of reasons for this, but let me cover a few of the big ones.
+
+1. The change from class components to hooks was quite hard on me. I don't want to teach something that I haven't had time to become confident with, which means I didn't really have much to say for the first part of the year -- I just didn't have the experience using hooks in real world code to actually teach them.
+2. Even after gaining familiarity with hooks, I've hesitant to spend much effort teaching many existing patterns, due to the near-certainty that they'll soon be obsolete. The announcement of [Concurrent Mode](https://reactjs.org/docs/concurrent-mode-intro.html) in October has only reinforced this opinion.
+3. As a result, for the first part of the year, I wasn't able to create much that I personally felt had enough value to broadcast to the world.
+
+Over the past few months however, I felt like I'm gaining my feet again. Instead of teaching React itself, I've focused on teaching how to build apps that *use* React. Instead of teaching the latest React patterns and APIs, I've been teaching the tools that I use *right now* in a real app. And while I'm not going to promise you updates at any specific frequency, I *will* be more communicative over the coming year.
+
+
+One last silly little thing
+---------------------------
+
+Near the beginning of 2019, I bought a big Lego rocket, and I gave myself a rule: one page of the instruction booklet gets built for each major piece of content that goes online.
+
+Here's an image I posted just after I got the rocket, on January 23:
+
+<Doc.Tweet tweetId="1088001898970472448" />
+
+And here's the rocket now -- after building *76* pages:
+
+<Doc.Tweet tweetId="1198574533818474496"  options={{ conversation: "none" }} />
+
+As silly as it sounds, the rocket has been a great motivator for me. Each time I add another brick to the rocket, it means I've taken one more meaningful step towards helping people to learn skills that can build them a better life.
+
+**If you've already become a Frontend Armory Pro member, then you've helped build 76 pages of rocket towards that goal.** And if not, then now's the perfect time to join! You'll not only get immediate access to:
+
+- The Vouch source code
+- All member-exclusive content
+- Early access to new content
+- The member's lounge slack room (where I answer questions a lot more reliably than I do via Twitter or Email)
+
+If you join in now, you'll *also* be helping to move another 100 pages closer to the goal of creating Frontend Armory, Vouch and Demoboard -- and helping people teach themselves a valuable skill in the process.
+
+*(Oh yeah, and since it's late November, I've dropped the yearly price from $180 to $150 -- it'll stay at that price until November 31.)*
+
+[**So join Frontend Armory Pro now &raquo;**](/pricing/individual/#buy)
+
+Thanks so much for reading! Can't wait to see you again at the next update :-)

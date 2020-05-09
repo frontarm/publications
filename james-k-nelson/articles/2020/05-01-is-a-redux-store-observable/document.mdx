@@ -1,0 +1,142 @@
+import { Doc } from '@frontarm/doc'
+
+If you've been using JavaScript for a while, then you've probably heard of observables. They're at the core of [Apollo Client](https://www.apollographql.com/docs/react/v3.0-beta/api/core/ObservableQuery/), [Angular JS](https://angular.io/guide/rx-library), and there's even a [proposal](https://github.com/tc39/proposal-observable) to add them to JavaScript itself.
+
+Of course, for many people, the first thing that comes to mind when you hear the word *observables* is the enormous [RxJS](https://rxjs-dev.firebaseapp.com/) library. And because of this, it can seem like observables are big, complicated things. But in truth, they can be as simple as a plain object with a `subscribe` method.
+
+```typescript
+interface Observable<T> {
+  subscribe(onNext: (value: T) => void): () => void
+}
+```
+
+While slightly different to the RxJS Observable, the above interface accomplishes exactly the same thing. It says: an `Observable` is an object with a `subscribe()` method, that takes an `onNext(value)` callback, and returns a function (which can be used to cancel the subscription). Simple, right? In fact, if you've ever used a Redux store, you might have seen something similar.
+
+
+Redux's Store
+-------------
+
+When you create a store using Redux's `createStore()` function, you'll get an object with a `subscribe()` method. In fact, this looks a lot like an Observable's `subscribe()` method -- but there's an important difference.
+
+```typescript
+interface ReduxStore {
+  subscribe(onChange: () => void): () => void
+}
+```
+
+Can you see what the difference is? Check your answer by clicking the spoiler below.
+
+<Doc.Spoiler>
+
+The callback that you pass to a Redux store's `subscribe()` method does not receive any arguments!
+
+</Doc.Spoiler>
+
+Where an observable's `subscribe()` function notifies you of each value *as it occurs*, Redux's subscribe function only tells you that *something* changed... *probably*. To find out *what* changed, you'll need to call another method on the `store` object: `getState()`.
+
+```typescript
+interface ReduxStore<T> {
+  getState(): T
+}
+```
+
+
+A trick question
+----------------
+
+Say that you have an observable, and you want to log every value that it produces to the console. Here's how you'd do it:
+
+```typescript
+observable.subscribe((value) => {
+  console.log(value)
+})
+```
+
+Makes sense, right? So the next question is: how would you log every state of a *Redux* store to the console? Let's do this as an exercise!
+
+**Your task is is to log every state of the below store to the console.**
+
+*Remember: you can get the current state with `store.getState()`.*
+
+You may think that this exercise looks far too simple, but give it a try anyway -- you'll see why when you're done.
+
+```js
+//---
+rightPanel: console
+maximizeRightPanel: true
+//--- index.js
+import { store } from './store'
+
+console.log('Your task: log each new store state to the console.')
+
+store.subscribe(() => {
+  // TODO
+})
+
+for (let i = 0; i < 5; i++) {
+  store.dispatch({ type: 'next' })
+}
+//--- store.js
+import { createStore } from 'redux'
+
+export const reducer = (state = 0, action) => {
+  // console.log(state)
+
+  switch (action.type) {
+    case 'next':
+      return state + 1
+
+    default:
+      return state
+  }
+}
+
+export const store = createStore(reducer)
+
+store.subscribe(() => { 
+  if (store.getState() % 2 === 1) {
+    store.dispatch({
+      type: 'next',
+    })
+  }
+})
+```
+
+How'd you go? Did you find something odd, where the console displayed every even number between 2 and 10 -- *twice*? Let me explain why.
+
+<Doc.Spoiler>
+
+While `index.js` only dispatches 5 actions, `store.js` also has a `subscribe()` handler -- and this one dispatches a second `next` action whenever the current state is an odd number.
+
+```js
+store.subscribe(() => { 
+  if (store.getState() % 2 === 1) {
+    store.dispatch({
+      type: 'next',
+    })
+  }
+})
+```
+
+</Doc.Spoiler>
+
+## Sources
+
+There's an important difference between Observables and Redux-like stores -- which I'm going to start calling **Sources**, and which I'm going to define as having a `getCurrentValue()` function in place of `getState()`.
+
+```typescript
+interface Source<T> {
+  subscribe(onChange: () => void): () => void
+  getCurrentValue(): T
+}
+```
+
+While an Observable passes *every* value to *every* subscribe callback, a Source makes no such guarantee; it can *skip* values. This makes Sources less capable than Observables in some ways; for example, you can't `reduce` over a Source's values. Interestingly though, this limitation actually makes Sources a much better fit for building UIs with React, because it allows for an interesting possibility.
+
+**What if there is *no* current value?**
+
+What if `getCurrentValue()` throws an Error? What if it throws a Promise? *What if you pass a source that throws an Error or Promise to React's [useSubscription](https://github.com/facebook/react/tree/master/packages/use-subscription) hook?* **You'll get Suspense and Error Boundaries support without writing a single line of component or hook-based code.**
+
+*Okay James, but what's your point?*
+
+Let me be clear: I'm *not* suggesting you throw out Apollo Client and switch back to Redux -- after all, Redux's `getState()` can't throw promises. But it *is* [food for thought](https://github.com/jamesknelson/retil/tree/monorepo/packages/source).
